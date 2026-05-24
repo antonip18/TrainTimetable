@@ -1,0 +1,16 @@
+drop table postoje;
+drop table TRASY_CYKLICZNE;
+drop type DNI_TYGODNIA;
+drop table PRZEJAZDY;
+drop table trasy;
+drop table SKLADY;
+drop table POCIAGI;
+drop table WAGONY;
+drop table MIEJSCA;
+drop table ELEMENTY_STALE;
+drop table TYPY_WAGONOW;
+drop table INFRASTRUKTURA_STACJI;
+drop table STACJE;
+drop table GMINY;
+drop table POWIATY;
+drop table WOJEWODZTWA;
