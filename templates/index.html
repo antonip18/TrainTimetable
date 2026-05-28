@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System Kolejowy</title>
+</head>
+<body>
+    <h1>Wyszukaj połączenie</h1>
+    <form action="/szukaj" method="POST">
+        <label>Skąd:</label>
+        <select name="stacja_start">
+            {% for stacja in stacje %}
+                <option value="{{ stacja.id_stacji }}">{{ stacja.nazwa_stacji }}</option>
+            {% endfor %}
+        </select>
+        
+        <label>Dokąd:</label>
+        <select name="stacja_koniec">
+            {% for stacja in stacje %}
+                <option value="{{ stacja.id_stacji }}">{{ stacja.nazwa_stacji }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit">Szukaj</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wyniki wyszukiwania</title>
+</head>
+<body>
+    <h1>Stacje osiągalne ze stacji: {{ start }}</h1>
+    
+    {% if sasiedzi %}
+        <ul>
+        {% for stacja in sasiedzi %}
+            <li>{{ stacja.nazwa_stacji }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Brak połączeń bezpośrednich z tej stacji.</p>
+    {% endif %}
+
+    <br>
+    <a href="/">Wróć do wyszukiwania</a>
+</body>
+</html>

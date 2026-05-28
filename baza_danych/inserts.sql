@@ -20129,7 +20129,8 @@ INSERT INTO SKLADY (id_pociagu, id_wagonu, numer_kolejnosci) VALUES
 (561, 3286, 4),
 (561, 3287, 5),
 (561, 3288, 6),
-(561, 3289, 7);INSERT INTO TRASY (id_trasy, nazwa_trasy) VALUES
+(561, 3289, 7);
+INSERT INTO TRASY (id_trasy, nazwa_trasy) VALUES
 (1, 'Trasa: KONOPNICKA_6146/7 (Wariant 95345)'),
 (2, 'Trasa: GEDANIA_57000/1 (Wariant 75025)'),
 (3, 'Trasa: SMOK_WAWELSKI_23108/9 (Wariant 59363)'),
