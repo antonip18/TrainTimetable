@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Szczegóły połączenia</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --text: #0f172a; --card: #ffffff; --border: #e2e8f0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        .details-container { width: 100%; max-width: 600px; }
+        .train-info-panel { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .train-title { font-size: 20px; font-weight: 700; color: var(--primary); margin: 0 0 6px 0; }
+        .train-meta { font-size: 14px; color: #64748b; }
+        .timeline { position: relative; padding-left: 30px; margin: 20px 0; }
+        .timeline::before { content: ''; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: #cbd5e1; }
+        .timeline-item { position: relative; margin-bottom: 24px; background: white; border: 1px solid var(--border); padding: 14px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .timeline-item::before { content: ''; position: absolute; left: -28px; top: 22px; width: 12px; height: 12px; background: white; border: 2px solid var(--primary); border-radius: 50%; z-index: 1; }
+        .station-name { font-weight: 600; font-size: 16px; color: #1e293b; }
+        .platform-info { font-size: 12px; color: #64748b; margin-top: 4px; }
+        .time-box { text-align: right; font-size: 14px; color: #334155; font-variant-numeric: tabular-nums; }
+        .time-row { margin-bottom: 2px; }
+        .time-label { color: #94a3b8; font-size: 11px; text-transform: uppercase; margin-right: 4px; }
+        .back-btn { display: inline-block; background: #64748b; color: white; text-decoration: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="details-container">
+        <div class="train-info-panel">
+            <h2 class="train-title">[{{ pociag.kategoria }}] {{ pociag.nazwa }}</h2>
+            <div class="train-meta">
+                Trasa globalna: <strong>{{ trasa.nazwa_trasy }}</strong><br>
+                Dzień kursowania kursu: <strong>{{ data }}</strong>
+            </div>
+        </div>
+
+        <h3>Przebieg i stacje pośrednie trasy:</h3>
+        <div class="timeline">
+            {% for stop in harmonogram %}
+                <div class="timeline-item">
+                    <div>
+                        <div class="station-name">{{ stop.stacja }}</div>
+                        <div class="platform-info">Peron: {{ stop.peron }} | Tor: {{ stop.tor }}</div>
+                    </div>
+                    <div class="time-box">
+                        {% if stop.przyjazd != 'Początek' %}
+                            <div class="time-row"><span class="time-label">Przyj.</span><strong>{{ stop.przyjazd }}</strong></div>
+                        {% endif %}
+                        {% if stop.odjazd != 'Koniec' %}
+                            <div class="time-row"><span class="time-label">Odj.</span><strong>{{ stop.odjazd }}</strong></div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <center><a href="javascript:history.back()" class="back-btn">← Wróć do wyników</a></center>
+    </div>
+</body>
+</html>

@@ -1,26 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
-    <title>System Kolejowy</title>
+    <meta charset="UTF-8">
+    <title>System Kolejowy - Wyszukiwarka</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f8fafc; color: #0f172a; display: flex; justify-content: center; padding-top: 60px; margin: 0; }
+        .search-container { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 450px; border: 1px solid #e2e8f0; }
+        .search-container h2 { text-align: center; margin-top: 0; color: #2563eb; margin-bottom: 25px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #475569; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; background-color: #f8fafc; }
+        button { width: 100%; background: #2563eb; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        button:hover { background: #1d4ed8; }
+    </style>
 </head>
 <body>
-    <h1>Wyszukaj połączenie</h1>
-    <form action="/szukaj" method="POST">
-        <label>Skąd:</label>
-        <select name="stacja_start">
-            {% for stacja in stacje %}
-                <option value="{{ stacja.id_stacji }}">{{ stacja.nazwa_stacji }}</option>
-            {% endfor %}
-        </select>
+
+    <div class="search-container">
+        <h2>Znajdź połączenie</h2>
         
-        <label>Dokąd:</label>
-        <select name="stacja_koniec">
-            {% for stacja in stacje %}
-                <option value="{{ stacja.id_stacji }}">{{ stacja.nazwa_stacji }}</option>
-            {% endfor %}
-        </select>
-        
-        <button type="submit">Szukaj</button>
-    </form>
+        <form action="/szukaj" method="POST">
+            <div class="form-group">
+                <label>Stacja początkowa:</label>
+                <select name="stacja_start" required>
+                    <option value="" disabled selected>Wybierz stację...</option>
+                    {% for stacja in stacje %}
+                        <option value="{{ stacja.id_stacji }}">{{ stacja.nazwa_stacji }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Stacja docelowa:</label>
+                <select name="stacja_koniec" required>
+                    <option value="" disabled selected>Wybierz stację...</option>
+                    {% for stacja in stacje %}
+                        <option value="{{ stacja.id_stacji }}">{{ stacja.nazwa_stacji }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Data podróży:</label>
+                <input type="date" name="data" value="{{ domyslna_data }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Godzina odjazdu (od):</label>
+                <input type="time" name="godzina" value="00:00" required>
+            </div>
+            
+            <button type="submit">Szukaj</button>
+        </form>
+    </div>
+
 </body>
 </html>

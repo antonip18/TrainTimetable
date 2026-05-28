@@ -1,22 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
+    <meta charset="UTF-8">
     <title>Wyniki wyszukiwania</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --text: #0f172a; --card: #ffffff; --border: #e2e8f0; --accent: #ea580c; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        .results-container { width: 100%; max-width: 700px; }
+        .header-box { text-align: center; margin-bottom: 30px; }
+        .header-box h2 { margin: 5px 0; color: var(--primary); }
+        .route-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .time-info { display: flex; align-items: center; gap: 20px; }
+        .time-block { text-align: center; }
+        .time-block .time { font-size: 22px; font-weight: 700; color: #1e293b; }
+        .time-block .station { font-size: 14px; color: #64748b; margin-top: 4px; }
+        .duration-line { display: flex; flex-direction: column; align-items: center; min-width: 130px; }
+        .duration-line .line { height: 2px; background: #cbd5e1; width: 100%; position: relative; margin: 8px 0; }
+        .duration-line .line::after { content: '➔'; position: absolute; right: -4px; top: -7px; color: #cbd5e1; font-size: 12px; }
+        .duration-line .duration { font-size: 12px; color: #64748b; font-weight: 500; }
+        .train-badge { background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569; display: inline-block; margin-bottom: 8px; }
+        .transfer-badge { background: #ffedd5; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--accent); display: inline-block; margin-bottom: 8px; margin-left: 6px; }
+        .transfer-details { font-size: 11px; color: #ea580c; margin-top: 2px; font-weight: 500; }
+        .btn-details { background: var(--primary); color: white; text-decoration: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+        .btn-details:hover { background: #1d4ed8; }
+        .no-results { text-align: center; background: white; padding: 40px; border-radius: 12px; border: 1px solid var(--border); color: #64748b; }
+        .back-link { margin-top: 20px; display: inline-block; color: var(--primary); text-decoration: none; font-weight: 500; }
+    </style>
 </head>
 <body>
-    <h1>Stacje osiągalne ze stacji: {{ start }}</h1>
-    
-    {% if sasiedzi %}
-        <ul>
-        {% for stacja in sasiedzi %}
-            <li>{{ stacja.nazwa_stacji }}</li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>Brak połączeń bezpośrednich z tej stacji.</p>
-    {% endif %}
+    <div class="results-container">
+        <div class="header-box">
+            <span>Wyniki wyszukiwania na dzień: <strong>{{ data }}</strong></span>
+            <h2>{{ start }} ➔ {{ koniec }}</h2>
+        </div>
 
-    <br>
-    <a href="/">Wróć do wyszukiwania</a>
+        {% if polaczenia %}
+            {% for p in polaczenia %}
+                <div class="route-card">
+                    <div>
+                        {% if p.type == 'direct' %}
+                            <span class="train-badge">{{ p.pociag.kategoria }} {{ p.pociag.nazwa }}</span>
+                        {% else %}
+                            <span class="train-badge">{{ p.pociag1.kategoria }} + {{ p.pociag2.kategoria }}</span>
+                            <span class="transfer-badge">1 Przesiadka</span>
+                        {% endif %}
+
+                        <div class="time-info">
+                            <div class="time-block">
+                                <div class="time">{{ p.odjazd }}</div>
+                                <div class="station">{{ start }}</div>
+                            </div>
+                            <div class="duration-line">
+                                <span class="duration">{{ p.czas_trwania }}</span>
+                                <div class="line"></div>
+                                {% if p.type == 'transfer' %}
+                                    <div class="transfer-details">Stacja: {{ p.stacja_przesiadki }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="time-block">
+                                <div class="time">{{ p.przyjazd }}</div>
+                                <div class="station">{{ koniec }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        {% if p.type == 'direct' %}
+                            <a href="/szczegoly/direct/{{ p.id_trasy }}?data={{ p.data_wyjazdu }}" class="btn-details">Szczegóły</a>
+                        {% else %}
+                            <a href="/szczegoly/transfer/{{ p.id_trasy_1 }}/{{ p.id_trasy_2 }}?data={{ p.data_wyjazdu }}&sid={{ p.sid }}&tid={{ p.tid }}&kid={{ p.kid }}" class="btn-details">Szczegóły</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-results">
+                <h3>Brak połączeń spełniających kryteria</h3>
+                <p>Spróbuj zmienić stację lub zakres godzinowy.</p>
+            </div>
+        {% endif %}
+        <center><a href="/" class="back-link">← Powrót do wyszukiwarki</a></center>
+    </div>
 </body>
 </html>
