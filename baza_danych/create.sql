@@ -84,8 +84,6 @@ CREATE TABLE SKLADY (
     UNIQUE(id_pociagu, numer_kolejnosci)
 );
 
-
-
 CREATE TABLE TRASY (
     id_trasy INTEGER PRIMARY KEY,
     nazwa_trasy VARCHAR(100) NOT NULL
@@ -125,3 +123,9 @@ CREATE TABLE POSTOJE (
     PRIMARY KEY(id_trasy, numer_postoju),
     CHECK(godzina_przyjazdu IS NULL OR godzina_odjazdu IS NULL OR (godzina_odjazdu >= godzina_przyjazdu AND dzien_przyjazdu_offset=dzien_odjazdu_offset) OR (dzien_odjazdu_offset=dzien_przyjazdu_offset+1))
 );
+
+CREATE INDEX idx_postoje_id_trasy ON POSTOJE(id_trasy);
+CREATE INDEX idx_postoje_id_peronu_toru ON POSTOJE(id_peronu_toru);
+CREATE INDEX idx_infra_id_stacji ON INFRASTRUKTURA_STACJI(id_stacji);
+CREATE INDEX idx_przejazdy_trasa_data ON PRZEJAZDY(id_trasy, data_przejazdu);
+CREATE INDEX idx_trasy_cykl_id_dzien ON TRASY_CYKLICZNE(id_trasy, dzien_kursowania);

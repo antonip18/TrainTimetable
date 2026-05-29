@@ -3,21 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Szczegóły połączenia bezpośredniego</title>
-    <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --text: #0f172a; --card: #ffffff; --border: #e2e8f0; --accent: #ea580c; }
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
-        .details-container { width: 100%; max-width: 600px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        h2 { margin-top: 0; color: var(--primary); text-align: center; }
-        .date-sub { text-align: center; color: #64748b; margin-bottom: 25px; font-size: 14px; }
-        .segment-title { font-size: 16px; font-weight: 700; color: #1e293b; margin: 20px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; }
-        .train-tag { font-size: 12px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; color: #475569; }
-        .timetable { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .timetable th, .timetable td { padding: 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
-        .timetable th { color: #64748b; font-size: 13px; font-weight: 600; }
-        .timetable td { font-size: 14px; }
-        .station-name { font-weight: 600; color: #334155; }
-        .back-btn { display: block; text-align: center; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: 500; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="details-container">
@@ -48,7 +34,28 @@
             </tbody>
         </table>
 
+        <div class="segment-title">
+            <span>Skład pociągu i udogodnienia</span>
+        </div>
+        
+        <div class="wagon-tabs" id="wagon-tabs"></div>
+
+        <div class="wagon-wrapper" id="wagon-data-bridge" data-wagony="{{ wagony_json | tojson | forceescape }}">
+            <div class="wagon-title" id="wagon-title">Wybierz wagon...</div>
+            <div class="wagon-grid" id="wagon-grid"></div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="legend-box" style="background: var(--seat);"></div> Standardowe</div>
+            <div class="legend-item"><div class="legend-box" style="background: var(--prm);"></div> Dla niepełnosprawnych</div>
+            <div class="legend-item"><div class="legend-box" style="background: var(--bike);"></div> Przewóz rowerów</div>
+            <div class="legend-item"><div class="legend-box" style="background: var(--table);"></div> Przy stoliku</div>
+            <div class="legend-item"><div class="legend-box" style="background: var(--element); border-style: dashed;"></div> Toaleta / Bagaż / Inne</div>
+        </div>
+
         <a href="javascript:history.back()" class="back-btn">← Wróć do wyników</a>
     </div>
+
+    <script src="{{ url_for('static', filename='js/train.js') }}"></script>
 </body>
 </html>

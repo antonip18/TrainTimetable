@@ -1,0 +1,224 @@
+:root {
+    --primary: #2b6cff;
+    --bg: #f6f8fb;
+    --text: #111827;
+
+    --card: #ffffff;
+    --border: #e5e7eb;
+
+    --accent: #f97316;
+
+    --seat: #e5e7eb;
+    --seat-border: #9aa4b2;
+    --seat-text: #334155;
+
+    --prm: #3b82f6;
+    --bike: #22c55e;
+    --table: #f59e0b;
+    --element: #cbd5e1;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 32px 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.details-container {
+    width: 100%;
+    max-width: 1000px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 26px 24px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+h2 {
+    margin: 0 0 6px 0;
+    text-align: center;
+    color: var(--primary);
+    font-weight: 650;
+    letter-spacing: -0.2px;
+}
+
+.date-sub {
+    text-align: center;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.segment-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin: 26px 0 14px;
+    padding-bottom: 6px;
+
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.train-tag {
+    font-size: 12px;
+    background: #f3f4f6;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: #4b5563;
+    font-weight: 600;
+}
+
+.timetable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 18px;
+}
+
+.timetable th {
+    text-align: left;
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 600;
+    padding: 8px;
+}
+
+.timetable td {
+    padding: 10px 8px;
+    font-size: 14px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.station-name {
+    font-weight: 600;
+    color: #374151;
+}
+
+.wagon-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+}
+
+.wagon-tab {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fafafa;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wagon-tab:hover {
+    background: #f3f4f6;
+}
+
+.wagon-tab.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.wagon-wrapper {
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wagon-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.wagon-grid {
+    display: grid;
+    gap: 5px;
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+}
+
+.grid-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.seat {
+    background: var(--seat);
+    border: 1px solid var(--seat-border);
+    color: var(--seat-text);
+    min-width: 38px;
+    min-height: 38px;
+}
+
+.seat.prm { 
+    background: var(--prm); 
+    color: #fff; 
+}
+
+.seat.bike { 
+    background: var(--bike); 
+    color: #fff; 
+}
+
+.seat.table { 
+    background: var(--table); 
+    color: #fff; 
+}
+
+.static-element {
+    background: #dbe2ea;
+    border: 1px dashed #94a3b8;
+    color: #475569;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: #4b5563;
+    justify-content: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}
+
+.back-btn {
+    display: block;
+    text-align: center;
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--primary);
+    text-decoration: none;
+}
