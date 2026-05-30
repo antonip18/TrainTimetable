@@ -346,10 +346,34 @@ def register_routes(app):
             abort(404)
         
         data_podrozy = request.args.get('data') or request.form.get('data')
+        
         sid = request.args.get('sid', default=0, type=int) or request.form.get('sid', default=0, type=int)
         tid = request.args.get('tid', default=0, type=int) or request.form.get('tid', default=0, type=int)
         kid = request.args.get('kid', default=0, type=int) or request.form.get('kid', default=0, type=int)
         
+        if sid == 0 or tid == 0 or kid == 0:
+            stops_t1 = db.session.query(InfrastrukturaStacji.id_stacji).\
+                join(Postoj, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
+                filter(Postoj.id_trasy == id1).order_by(Postoj.numer_postoju).all()
+            stops_t2 = db.session.query(InfrastrukturaStacji.id_stacji).\
+                join(Postoj, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
+                filter(Postoj.id_trasy == id2).order_by(Postoj.numer_postoju).all()
+                
+            list_t1 = [r[0] for r in stops_t1]
+            list_t2 = [r[0] for r in stops_t2]
+            
+            wspolne = list(set(list_t1).intersection(set(list_t2)))
+            
+            if len(wspolne) > 0:
+                tid = wspolne[0]
+            else:
+                tid = list_t1[-1] if list_t1 else 0
+                
+            if sid == 0:
+                sid = list_t1[0] if list_t1 else 0
+            if kid == 0:
+                kid = list_t2[-1] if list_t2 else 0
+
         def get_sliced_stops(id_trasy, start_stacja_id, end_stacja_id):
             wycinek_postojow = db.session.query(Postoj, Stacja, InfrastrukturaStacji).\
                 join(InfrastrukturaStacji, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
@@ -359,6 +383,7 @@ def register_routes(app):
                 
             res = []
             recording = False
+            
             for p, stacja, infra in wycinek_postojow:
                 if stacja.id_stacji == start_stacja_id:
                     recording = True
@@ -366,12 +391,14 @@ def register_routes(app):
                     res.append({
                         'numer': p.numer_postoju,
                         'stacja': stacja.nazwa_stacji,
-                        'peron': infra.numer_peronu,
-                        'tor': infra.numer_toru,
+                        'peron': infra.numer_peronu if infra.numer_peronu is not None else "-",
+                        'tor': infra.numer_toru if infra.numer_toru is not None else "-",
                         'przyjazd': p.godzina_przyjazdu.strftime('%H:%M') if p.godzina_przyjazdu else 'Początek',
-                        'odjazd': p.godzina_odjazdu.strftime('%H:%M') if p.godzina_odjazdu else 'Koniec'
+                        'odjazd': p.godzina_odjazdu.strftime('%H:%M') if p.godzina_odjazdu else 'Koniec',
+                        'lat': stacja.szerokosc_geograficzna,
+                        'lon': stacja.dlugosc_geograficzna
                     })
-                if stacja.id_stacji == end_stacja_id:
+                if stacja.id_stacji == end_stacja_id and recording:
                     break
             return res
 
@@ -380,10 +407,13 @@ def register_routes(app):
 
         try:
             b_date = datetime.datetime.strptime(data_podrozy, '%Y-%m-%d').date() if data_podrozy else None
-        except ValueError:
+        except (ValueError, TypeError):
             b_date = None
 
+        wagony_struktura1 = get_wagony_dla_trasy(id1, b_date)
+        wagony_struktura2 = get_wagony_dla_trasy(id2, b_date)
+
         return render_template('szczegoly_transfer.html', 
-                               trasa1=trasa1, pociag1=get_pociag_info(id1, b_date), h1=h1,
-                               trasa2=trasa2, pociag2=get_pociag_info(id2, b_date), h2=h2,
-                               data=data_podrozy)
+                            trasa1=trasa1, pociag1=get_pociag_info(id1, b_date), h1=h1, wagony_json1=wagony_struktura1,
+                            trasa2=trasa2, pociag2=get_pociag_info(id2, b_date), h2=h2, wagony_json2=wagony_struktura2,
+                            data=data_podrozy)
