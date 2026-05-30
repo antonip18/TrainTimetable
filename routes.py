@@ -4,6 +4,9 @@ from models import Sklad, Wagon, TypWagonu, ElementStaly, Miejsce
 from sqlalchemy.orm import aliased
 from sqlalchemy import and_, or_, text
 import datetime
+import heapq
+from collections import defaultdict
+import itertools
 
 def time_to_minutes(t):
     if t is None:
@@ -37,15 +40,12 @@ def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None):
         q = q.filter(Przejazd.data_przejazdu == data_podrozy_obj)
         
     przejazd = q.first()
-    
     if not przejazd:
         przejazd = db.session.query(Przejazd).filter(Przejazd.id_trasy == id_trasy).first()
-        
     if not przejazd:
         return []
 
     id_pociagu = przejazd.id_pociagu
-
     sklady = db.session.query(Sklad, Wagon, TypWagonu).\
         join(Wagon, Sklad.id_wagonu == Wagon.id_wagonu).\
         join(TypWagonu, Wagon.id_typu == TypWagonu.id_typu).\
@@ -53,22 +53,18 @@ def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None):
         order_by(Sklad.numer_kolejnosci).all()
 
     wyniki_wagonow = []
-    
     for sklad, wagon, typ in sklady:
         elementy_db = db.session.query(ElementStaly).filter_by(id_typu=typ.id_typu).all()
         elementy = [{
             'nazwa': el.nazwa_elementu,
-            'r_od': el.rzad_od,
-            'r_do': el.rzad_do,
-            'k_od': el.kolumna_od,
-            'k_do': el.kolumna_do
+            'r_od': el.rzad_od, 'r_do': el.rzad_do,
+            'k_od': el.kolumna_od, 'k_do': el.kolumna_do
         } for el in elementy_db]
 
         miejsca_db = db.session.query(Miejsce).filter_by(id_typu=typ.id_typu).all()
         miejsca = [{
             'numer': m.numer_miejsca,
-            'rzad': m.rzad,
-            'kol': m.kolumna,
+            'rzad': m.rzad, 'kol': m.kolumna,
             'prm': m.czy_dla_niepelnosprawnych,
             'rower': m.czy_dla_rowerzystow,
             'stolik': m.czy_przy_stoliku,
@@ -83,7 +79,6 @@ def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None):
             'elementy': elementy,
             'miejsca': miejsca
         })
-        
     return wyniki_wagonow
 
 
@@ -100,17 +95,10 @@ def register_routes(app):
 
         query = text("""
             SELECT 
-                p.numer_postoju,
-                p.godzina_przyjazdu,
-                p.godzina_odjazdu,
-                i.numer_peronu,
-                i.numer_toru,
-                s.nazwa_stacji,
-                s.szerokosc_geograficzna,
-                s.dlugosc_geograficzna,
-                g.nazwa_gminy,
-                pow.nazwa_powiatu,
-                w.nazwa_wojewodztwa
+                p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu,
+                i.numer_peronu, i.numer_toru, s.nazwa_stacji,
+                s.szerokosc_geograficzna, s.dlugosc_geograficzna,
+                g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa
             FROM POSTOJE p
             JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
             JOIN STACJE s ON i.id_stacji = s.id_stacji
@@ -125,7 +113,6 @@ def register_routes(app):
         harmonogram = []
         for r in postoje_rows:
             czy_gmina_jest = r.nazwa_gminy is not None
-            
             harmonogram.append({
                 'numer': r.numer_postoju,
                 'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
@@ -133,8 +120,7 @@ def register_routes(app):
                 'tor': r.numer_toru if r.numer_toru is not None else "-",
                 'przyjazd': r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else 'Początek',
                 'odjazd': r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else 'Koniec',
-                'lat': r.szerokosc_geograficzna,
-                'lon': r.dlugosc_geograficzna,
+                'lat': r.szerokosc_geograficzna, 'lon': r.dlugosc_geograficzna,
                 'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
                 'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
                 'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
@@ -148,8 +134,7 @@ def register_routes(app):
         wagony_struktura = get_wagony_dla_trasy(id_trasy, b_date)
 
         return render_template('szczegoly_direct.html', 
-                            trasa=trasa, 
-                            harmonogram=harmonogram, 
+                            trasa=trasa, harmonogram=harmonogram, 
                             pociag=get_pociag_info(id_trasy, b_date), 
                             data=data_podrozy if data_podrozy else "Brak daty",
                             wagony_json=wagony_struktura)
@@ -189,8 +174,6 @@ def register_routes(app):
         }
         dzien_tyg_nazwa = dni_tygodnia_map[base_date.weekday()]
 
-        polaczenia_dict = {}
-
         aktywne_trasy_ids = [r[0] for r in db.session.query(Trasa.id_trasy).\
             outerjoin(TrasaCykliczna, Trasa.id_trasy == TrasaCykliczna.id_trasy).\
             outerjoin(Przejazd, Trasa.id_trasy == Przejazd.id_trasy).\
@@ -199,144 +182,175 @@ def register_routes(app):
         if not aktywne_trasy_ids:
             return render_template('wyniki.html', polaczenia=[], start="..", koniec="..", data=data_podrozy)
 
-        p_start = aliased(Postoj)
-        p_koniec = aliased(Postoj)
-        infra_start = aliased(InfrastrukturaStacji)
-        infra_koniec = aliased(InfrastrukturaStacji)
-        
-        direct_rows = db.session.query(Trasa, p_start, p_koniec, Pociag).\
-            join(p_start, Trasa.id_trasy == p_start.id_trasy).\
-            join(infra_start, p_start.id_peronu_toru == infra_start.id).\
-            join(p_koniec, Trasa.id_trasy == p_koniec.id_trasy).\
-            join(infra_koniec, p_koniec.id_peronu_toru == infra_koniec.id).\
-            outerjoin(Przejazd, and_(Trasa.id_trasy == Przejazd.id_trasy, or_(Przejazd.data_przejazdu == base_date, Przejazd.data_przejazdu == None))).\
-            outerjoin(Pociag, Przejazd.id_pociagu == Pociag.id_pociagu).\
-            filter(Trasa.id_trasy.in_(aktywne_trasy_ids)).\
-            filter(infra_start.id_stacji == start_id).\
-            filter(infra_koniec.id_stacji == koniec_id).\
-            filter(p_start.numer_postoju < p_koniec.numer_postoju).\
-            filter(p_start.godzina_odjazdu != None).\
-            filter(p_koniec.godzina_przyjazdu != None).all()
-
-        for trasa, ps, pk, pociag_obj in direct_rows:
-            m_start = time_to_minutes(ps.godzina_odjazdu)
-            m_koniec = time_to_minutes(pk.godzina_przyjazdu)
-            
-            days_offset = (pk.dzien_przyjazdu_offset - ps.dzien_odjazdu_offset)
-            total_minutes = (m_koniec - m_start) + (days_offset * 1440)
-            diff = (m_start - m_input) % 1440
-            dep_date = base_date if m_start >= m_input else base_date + datetime.timedelta(days=1)
-
-            p_info = {'kategoria': pociag_obj.kategoria if pociag_obj else "REG", 'nazwa': pociag_obj.nazwa if pociag_obj else f"Pociąg {trasa.id_trasy}"}
-            key = ('direct', trasa.id_trasy, ps.godzina_odjazdu.strftime('%H:%M'))
-            
-            if key not in polaczenia_dict:
-                polaczenia_dict[key] = {
-                    'type': 'direct',
-                    'id_trasy': trasa.id_trasy,
-                    'odjazd': ps.godzina_odjazdu.strftime('%H:%M'),
-                    'przyjazd': pk.godzina_przyjazdu.strftime('%H:%M'),
-                    'czas_trwania': format_minutes(total_minutes),
-                    'total_minutes': total_minutes,
-                    'sort_diff': diff,
-                    'data_wyjazdu': dep_date.strftime('%Y-%m-%d'),
-                    'pociag': p_info,
-                    'route_name': trasa.nazwa_trasy
-                }
-
-        p1 = aliased(Postoj)
-        p2 = aliased(Postoj)
-        p3 = aliased(Postoj)
-        p4 = aliased(Postoj)
-        infra1 = aliased(InfrastrukturaStacji)
-        infra2 = aliased(InfrastrukturaStacji)
-        infra3 = aliased(InfrastrukturaStacji)
-        infra4 = aliased(InfrastrukturaStacji)
-        t1 = aliased(Trasa)
-        t2 = aliased(Trasa)
-        
-        poc1 = aliased(Pociag)
-        poc2 = aliased(Pociag)
-        prz1 = aliased(Przejazd)
-        prz2 = aliased(Przejazd)
-
-        transfer_rows = db.session.query(t1, p1, p2, t2, p3, p4, infra2.id_stacji, poc1, poc2).\
-            select_from(t1).\
-            join(p1, t1.id_trasy == p1.id_trasy).\
-            join(infra1, p1.id_peronu_toru == infra1.id).\
-            join(p2, t1.id_trasy == p2.id_trasy).\
-            join(infra2, p2.id_peronu_toru == infra2.id).\
-            join(infra3, infra2.id_stacji == infra3.id_stacji).\
-            join(p3, infra3.id == p3.id_peronu_toru).\
-            join(t2, p3.id_trasy == t2.id_trasy).\
-            join(p4, t2.id_trasy == p4.id_trasy).\
-            join(infra4, p4.id_peronu_toru == infra4.id).\
-            outerjoin(prz1, and_(t1.id_trasy == prz1.id_trasy, or_(prz1.data_przejazdu == base_date, prz1.data_przejazdu == None))).\
-            outerjoin(poc1, prz1.id_pociagu == poc1.id_pociagu).\
-            outerjoin(prz2, and_(t2.id_trasy == prz2.id_trasy, or_(prz2.data_przejazdu == base_date, prz2.data_przejazdu == None))).\
-            outerjoin(poc2, prz2.id_pociagu == poc2.id_pociagu).\
-            filter(t1.id_trasy.in_(aktywne_trasy_ids)).\
-            filter(t2.id_trasy.in_(aktywne_trasy_ids)).\
-            filter(infra1.id_stacji == start_id).\
-            filter(infra4.id_stacji == koniec_id).\
-            filter(p1.numer_postoju < p2.numer_postoju).\
-            filter(p3.numer_postoju < p4.numer_postoju).\
-            filter(t1.id_trasy != t2.id_trasy).\
-            filter(p1.godzina_odjazdu != None).\
-            filter(p2.godzina_przyjazdu != None).\
-            filter(p3.godzina_odjazdu != None).\
-            filter(p4.godzina_przyjazdu != None).all()
-
         stacje_cache = {s.id_stacji: s.nazwa_stacji for s in db.session.query(Stacja.id_stacji, Stacja.nazwa_stacji).all()}
 
-        for train1, pos1, pos2, train2, pos3, pos4, id_stacji_przesiadki, p1_obj, p2_obj in transfer_rows:
-            m1_dep = time_to_minutes(pos1.godzina_odjazdu)
-            m1_arr = time_to_minutes(pos2.godzina_przyjazdu)
-            m2_dep = time_to_minutes(pos3.godzina_odjazdu)
-            m2_arr = time_to_minutes(pos4.godzina_przyjazdu)
+        pociagi_rows = db.session.query(Przejazd.id_trasy, Pociag.kategoria, Pociag.nazwa).\
+            join(Pociag, Przejazd.id_pociagu == Pociag.id_pociagu).\
+            filter(or_(Przejazd.data_przejazdu == base_date, Przejazd.data_przejazdu == None)).all()
+        pociag_cache = {r.id_trasy: {'kategoria': r.kategoria, 'nazwa': r.nazwa} for r in pociagi_rows}
 
-            leg1 = (m1_arr - m1_dep) + ((pos2.dzien_przyjazdu_offset - pos1.dzien_odjazdu_offset) * 1440)
-            wait = (m2_dep - m1_arr) + ((pos3.dzien_przyjazdu_offset - pos2.dzien_przyjazdu_offset) * 1440)
-            leg2 = (m2_arr - m2_dep) + ((pos4.dzien_odjazdu_offset - pos3.dzien_przyjazdu_offset) * 1440)
+        postoje_raw = db.session.query(
+            Postoj.id_trasy, Trasa.nazwa_trasy, InfrastrukturaStacji.id_stacji,
+            Postoj.numer_postoju, Postoj.godzina_przyjazdu, Postoj.godzina_odjazdu,
+            Postoj.dzien_przyjazdu_offset, Postoj.dzien_odjazdu_offset
+        ).join(Trasa, Postoj.id_trasy == Trasa.id_trasy).\
+        join(InfrastrukturaStacji, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
+        filter(Postoj.id_trasy.in_(aktywne_trasy_ids)).order_by(Postoj.id_trasy, Postoj.numer_postoju).all()
 
-            if wait < 5 or wait > 240:
-                continue
+        trasy_map = {}
+        for r in postoje_raw:
+            if r.id_trasy not in trasy_map:
+                trasy_map[r.id_trasy] = {'nazwa': r.nazwa_trasy, 'stops': []}
+            trasy_map[r.id_trasy]['stops'].append(r)
 
-            total_minutes = leg1 + wait + leg2
-            diff = (m1_dep - m_input) % 1440
-            dep_date = base_date if m1_dep >= m_input else base_date + datetime.timedelta(days=1)
+        def rozwiazanie_optymalne_dijkstra():
+            graph = defaultdict(list)
+            tie_breaker = itertools.count()
             
-            key = ('transfer', train1.id_trasy, train2.id_trasy, pos1.godzina_odjazdu.strftime('%H:%M'))
-            if key not in polaczenia_dict:
-                stacja_przesiadki = stacje_cache.get(id_stacji_przesiadki, "Nieznana")
-                
-                polaczenia_dict[key] = {
-                    'type': 'transfer',
-                    'id_trasy_1': train1.id_trasy,
-                    'id_trasy_2': train2.id_trasy,
-                    'sid': start_id,
-                    'tid': id_stacji_przesiadki,
-                    'kid': koniec_id,
-                    'odjazd': pos1.godzina_odjazdu.strftime('%H:%M'),
-                    'przyjazd': pos4.godzina_przyjazdu.strftime('%H:%M'),
-                    'czas_trwania': format_minutes(total_minutes),
-                    'total_minutes': total_minutes,
-                    'sort_diff': diff,
-                    'data_wyjazdu': dep_date.strftime('%Y-%m-%d'),
-                    'stacja_przesiadki': stacja_przesiadki,
-                    'przyjazd_przesiadka': pos2.godzina_przyjazdu.strftime('%H:%M'),
-                    'odjazd_przesiadka': pos3.godzina_odjazdu.strftime('%H:%M'),
-                    'pociag1': {'kategoria': p1_obj.kategoria if p1_obj else "REG", 'nazwa': p1_obj.nazwa if p1_obj else f"Pociąg {train1.id_trasy}"},
-                    'pociag2': {'kategoria': p2_obj.kategoria if p2_obj else "REG", 'nazwa': p2_obj.nazwa if p2_obj else f"Pociąg {train2.id_trasy}"}
-                }
+            for tid, tinfo in trasy_map.items():
+                stops = tinfo['stops']
+                for i in range(len(stops) - 1):
+                    u = stops[i]
+                    v = stops[i+1]
+                    if u.godzina_odjazdu is None or v.godzina_przyjazdu is None: 
+                        continue
 
-        all_options = list(polaczenia_dict.values())
-        all_options.sort(key=lambda x: (0 if x['type'] == 'direct' else 1, x['sort_diff']))
+                    dep_min = time_to_minutes(u.godzina_odjazdu) + (u.dzien_odjazdu_offset * 1440)
+                    arr_min = time_to_minutes(v.godzina_przyjazdu) + (v.dzien_przyjazdu_offset * 1440)
+
+                    graph[u.id_stacji].append({
+                        'to': v.id_stacji, 'route_id': tid, 'route_name': tinfo['nazwa'],
+                        'dep_min': dep_min, 'arr_min': arr_min,
+                        'dep_str': u.godzina_odjazdu.strftime('%H:%M'),
+                        'arr_str': v.godzina_przyjazdu.strftime('%H:%M')
+                    })
+
+            pq = []
+            for edge in graph[start_id]:
+                if edge['dep_min'] >= m_input:
+                    path_leg = [{
+                        'route_id': edge['route_id'], 'start_station': start_id, 'end_station': edge['to'],
+                        'dep_min': edge['dep_min'], 'arr_min': edge['arr_min'],
+                        'dep_str': edge['dep_str'], 'arr_str': edge['arr_str']
+                    }]
+                    heapq.heappush(pq, (edge['arr_min'], 0, edge['dep_min'], edge['to'], edge['route_id'], next(tie_breaker), path_leg))
+
+            visited = defaultdict(list)
+
+            def is_dominated(node, arr, trans, dep):
+                for v_arr, v_trans, v_dep in visited[node]:
+                    if v_arr <= arr and v_trans <= trans and v_dep >= dep:
+                        return True
+                return False
+
+            znalezione_polaczenia = []
+
+            while pq:
+                arr_min, trans, dep_min_start, u, curr_route, _, path = heapq.heappop(pq)
+                if trans > 2:
+                    continue
+
+                if is_dominated(u, arr_min, trans, dep_min_start):
+                    continue
+                visited[u].append((arr_min, trans, dep_min_start))
+
+                if u == koniec_id:
+                    znalezione_polaczenia.append((arr_min, trans, dep_min_start, path))
+                    continue
+
+                for edge in graph[u]:
+                    is_transfer = (edge['route_id'] != curr_route)
+                    next_trans = trans + (1 if is_transfer else 0)
+
+                    if next_trans > 2:
+                        continue
+
+                    if is_transfer:
+                        wait_time = edge['dep_min'] - arr_min
+                        if not (5 <= wait_time <= 240):
+                            continue
+                    else:
+                        if edge['dep_min'] < arr_min:
+                            continue
+
+                    new_arr = edge['arr_min']
+                    
+                    if not is_dominated(edge['to'], new_arr, next_trans, dep_min_start):
+                        new_path = list(path)
+                        
+                        if not is_transfer:
+                            last_leg = new_path[-1].copy()
+                            last_leg['end_station'] = edge['to']
+                            last_leg['arr_min'] = edge['arr_min']
+                            last_leg['arr_str'] = edge['arr_str']
+                            new_path[-1] = last_leg
+                        else:
+                            new_path.append({
+                                'route_id': edge['route_id'], 'start_station': u, 'end_station': edge['to'],
+                                'dep_min': edge['dep_min'], 'arr_min': edge['arr_min'],
+                                'dep_str': edge['dep_str'], 'arr_str': edge['arr_str']
+                            })
+
+                        heapq.heappush(pq, (new_arr, next_trans, dep_min_start, edge['to'], edge['route_id'], next(tie_breaker), new_path))
+                        
+            return mapuj_na_szablony(znalezione_polaczenia)
+            
+        def mapuj_na_szablony(surowe_trasy):
+            gotowe = []
+            for arr_min, trans, dep_min, path in surowe_trasy:
+                total_minutes = arr_min - dep_min
+                diff = (dep_min - m_input) % 1440
+                dep_date = base_date + datetime.timedelta(days=(dep_min // 1440))
+                
+                if trans == 0:
+                    l = path[0]
+                    gotowe.append({
+                        'type': 'direct', 'id_trasy': l['route_id'], 'odjazd': l['dep_str'], 'przyjazd': l['arr_str'],
+                        'czas_trwania': format_minutes(total_minutes), 'total_minutes': total_minutes,
+                        'sort_diff': diff, 'data_wyjazdu': dep_date.strftime('%Y-%m-%d'),
+                        'pociag': pociag_cache.get(l['route_id'], {'kategoria': 'REG', 'nazwa': 'Pociąg'}),
+                        'route_name': trasy_map[l['route_id']]['nazwa']
+                    })
+                elif trans == 1:
+                    l1, l2 = path[0], path[1]
+                    gotowe.append({
+                        'type': 'transfer', 'id_trasy_1': l1['route_id'], 'id_trasy_2': l2['route_id'],
+                        'sid': start_id, 'tid': l1['end_station'], 'kid': koniec_id,
+                        'odjazd': l1['dep_str'], 'przyjazd': l2['arr_str'],
+                        'czas_trwania': format_minutes(total_minutes), 'total_minutes': total_minutes,
+                        'sort_diff': diff, 'data_wyjazdu': dep_date.strftime('%Y-%m-%d'),
+                        'stacja_przesiadki': stacje_cache.get(l1['end_station'], "Nieznana"),
+                        'przyjazd_przesiadka': l1['arr_str'], 'odjazd_przesiadka': l2['dep_str'],
+                        'pociag1': pociag_cache.get(l1['route_id'], {}), 'pociag2': pociag_cache.get(l2['route_id'], {})
+                    })
+                elif trans == 2:
+                    l1, l2, l3 = path[0], path[1], path[2]
+                    gotowe.append({
+                        'type': 'transfer2', 
+                        'id_trasy_1': l1['route_id'], 'id_trasy_2': l2['route_id'], 'id_trasy_3': l3['route_id'],
+                        'sid': start_id, 'tid1': l1['end_station'], 'tid2': l2['end_station'], 'kid': koniec_id,
+                        'odjazd': l1['dep_str'], 'przyjazd': l3['arr_str'],
+                        'czas_trwania': format_minutes(total_minutes), 'total_minutes': total_minutes,
+                        'sort_diff': diff, 'data_wyjazdu': dep_date.strftime('%Y-%m-%d'),
+                        'stacja_przesiadki1': stacje_cache.get(l1['end_station'], "Nieznana"),
+                        'przyjazd_przesiadka1': l1['arr_str'], 'odjazd_przesiadka1': l2['dep_str'],
+                        'stacja_przesiadki2': stacje_cache.get(l2['end_station'], "Nieznana"),
+                        'przyjazd_przesiadka2': l2['arr_str'], 'odjazd_przesiadka2': l3['dep_str'],
+                        'pociag1': pociag_cache.get(l1['route_id'], {}), 'pociag2': pociag_cache.get(l2['route_id'], {}),
+                        'pociag3': pociag_cache.get(l3['route_id'], {})
+                    })
+            return gotowe
+
+        all_options = rozwiazanie_optymalne_dijkstra()
+
+        type_priority = {'direct': 0, 'transfer': 1, 'transfer2': 2}
+        all_options.sort(key=lambda x: (type_priority.get(x['type'], 3), x['sort_diff'], x['total_minutes']))
 
         stacja_start_nazwa = stacje_cache.get(start_id, "Nieznana")
         stacja_koniec_nazwa = stacje_cache.get(koniec_id, "Nieznana")
 
         return render_template('wyniki.html', polaczenia=all_options, start=stacja_start_nazwa, koniec=stacja_koniec_nazwa, data=data_podrozy)
+
 
     @app.route('/szczegoly/transfer/<int:id1>/<int:id2>', methods=['GET', 'POST'])
     def szczegoly_transfer(id1, id2):
@@ -363,7 +377,6 @@ def register_routes(app):
             list_t2 = [r[0] for r in stops_t2]
             
             wspolne = list(set(list_t1).intersection(set(list_t2)))
-            
             if len(wspolne) > 0:
                 tid = wspolne[0]
             else:
@@ -395,8 +408,7 @@ def register_routes(app):
                         'tor': infra.numer_toru if infra.numer_toru is not None else "-",
                         'przyjazd': p.godzina_przyjazdu.strftime('%H:%M') if p.godzina_przyjazdu else 'Początek',
                         'odjazd': p.godzina_odjazdu.strftime('%H:%M') if p.godzina_odjazdu else 'Koniec',
-                        'lat': stacja.szerokosc_geograficzna,
-                        'lon': stacja.dlugosc_geograficzna
+                        'lat': stacja.szerokosc_geograficzna, 'lon': stacja.dlugosc_geograficzna
                     })
                 if stacja.id_stacji == end_stacja_id and recording:
                     break
@@ -416,4 +428,65 @@ def register_routes(app):
         return render_template('szczegoly_transfer.html', 
                             trasa1=trasa1, pociag1=get_pociag_info(id1, b_date), h1=h1, wagony_json1=wagony_struktura1,
                             trasa2=trasa2, pociag2=get_pociag_info(id2, b_date), h2=h2, wagony_json2=wagony_struktura2,
+                            data=data_podrozy)
+
+    @app.route('/szczegoly/transfer2/<int:id1>/<int:id2>/<int:id3>', methods=['GET', 'POST'])
+    def szczegoly_transfer2(id1, id2, id3):
+        trasa1 = db.session.get(Trasa, id1)
+        trasa2 = db.session.get(Trasa, id2)
+        trasa3 = db.session.get(Trasa, id3)
+        if not trasa1 or not trasa2 or not trasa3:
+            abort(404)
+        
+        data_podrozy = request.args.get('data') or request.form.get('data')
+        
+        sid = request.args.get('sid', default=0, type=int) or request.form.get('sid', default=0, type=int)
+        tid1 = request.args.get('tid1', default=0, type=int) or request.form.get('tid1', default=0, type=int)
+        tid2 = request.args.get('tid2', default=0, type=int) or request.form.get('tid2', default=0, type=int)
+        kid = request.args.get('kid', default=0, type=int) or request.form.get('kid', default=0, type=int)
+
+        def get_sliced_stops(id_trasy, start_stacja_id, end_stacja_id):
+            wycinek_postojow = db.session.query(Postoj, Stacja, InfrastrukturaStacji).\
+                join(InfrastrukturaStacji, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
+                join(Stacja, InfrastrukturaStacji.id_stacji == Stacja.id_stacji).\
+                filter(Postoj.id_trasy == id_trasy).\
+                order_by(Postoj.numer_postoju).all()
+                
+            res = []
+            recording = False
+            
+            for p, stacja, infra in wycinek_postojow:
+                if stacja.id_stacji == start_stacja_id:
+                    recording = True
+                if recording:
+                    res.append({
+                        'numer': p.numer_postoju,
+                        'stacja': stacja.nazwa_stacji,
+                        'peron': infra.numer_peronu if infra.numer_peronu is not None else "-",
+                        'tor': infra.numer_toru if infra.numer_toru is not None else "-",
+                        'przyjazd': p.godzina_przyjazdu.strftime('%H:%M') if p.godzina_przyjazdu else 'Początek',
+                        'odjazd': p.godzina_odjazdu.strftime('%H:%M') if p.godzina_odjazdu else 'Koniec',
+                        'lat': stacja.szerokosc_geograficzna, 'lon': stacja.dlugosc_geograficzna
+                    })
+                if stacja.id_stacji == end_stacja_id and recording:
+                    break
+            return res
+
+        h1 = get_sliced_stops(id1, sid, tid1)
+        h2 = get_sliced_stops(id2, tid1, tid2)
+        h3 = get_sliced_stops(id3, tid2, kid)
+
+        try:
+            b_date = datetime.datetime.strptime(data_podrozy, '%Y-%m-%d').date() if data_podrozy else None
+        except (ValueError, TypeError):
+            b_date = None
+
+        wagony_struktura1 = get_wagony_dla_trasy(id1, b_date)
+        wagony_struktura2 = get_wagony_dla_trasy(id2, b_date)
+        wagony_struktura3 = get_wagony_dla_trasy(id3, b_date)
+
+        return render_template('szczegoly_2_przesiadki.html', 
+                            trasa1=trasa1, pociag1=get_pociag_info(id1, b_date), h1=h1, wagony_json1=wagony_struktura1,
+                            trasa2=trasa2, pociag2=get_pociag_info(id2, b_date), h2=h2, wagony_json2=wagony_struktura2,
+                            trasa3=trasa3, pociag3=get_pociag_info(id3, b_date), h3=h3, wagony_json3=wagony_struktura3,
                             data=data_podrozy)

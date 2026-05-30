@@ -40,9 +40,12 @@
                     <div>
                         {% if p.type == 'direct' %}
                             <span class="train-badge">{{ p.pociag.kategoria }} {{ p.pociag.nazwa }}</span>
-                        {% else %}
+                        {% elif p.type == 'transfer' %}
                             <span class="train-badge">{{ p.pociag1.kategoria }} + {{ p.pociag2.kategoria }}</span>
                             <span class="transfer-badge">1 Przesiadka</span>
+                        {% elif p.type == 'transfer2' %}
+                            <span class="train-badge">{{ p.pociag1.kategoria }} + {{ p.pociag2.kategoria }} + {{ p.pociag3.kategoria }}</span>
+                            <span class="transfer-badge" style="background: #fee2e2; color: #dc2626;">2 Przesiadki</span>
                         {% endif %}
 
                         <div class="time-info">
@@ -53,8 +56,11 @@
                             <div class="duration-line">
                                 <span class="duration">{{ p.czas_trwania }}</span>
                                 <div class="line"></div>
+                                
                                 {% if p.type == 'transfer' %}
                                     <div class="transfer-details">Stacja: {{ p.stacja_przesiadki }}</div>
+                                {% elif p.type == 'transfer2' %}
+                                    <div class="transfer-details">Przesiadki: {{ p.stacja_przesiadki1 }} ➔ {{ p.stacja_przesiadki2 }}</div>
                                 {% endif %}
                             </div>
                             <div class="time-block">
@@ -63,11 +69,14 @@
                             </div>
                         </div>
                     </div>
+                    
                     <div>
                         {% if p.type == 'direct' %}
                             <a href="/szczegoly/direct/{{ p.id_trasy }}?data={{ p.data_wyjazdu }}" class="btn-details">Szczegóły</a>
-                        {% else %}
+                        {% elif p.type == 'transfer' %}
                             <a href="/szczegoly/transfer/{{ p.id_trasy_1 }}/{{ p.id_trasy_2 }}?data={{ p.data_wyjazdu }}&sid={{ p.sid }}&tid={{ p.tid }}&kid={{ p.kid }}" class="btn-details">Szczegóły</a>
+                        {% elif p.type == 'transfer2' %}
+                            <a href="/szczegoly/transfer2/{{ p.id_trasy_1 }}/{{ p.id_trasy_2 }}/{{ p.id_trasy_3 }}?data={{ p.data_wyjazdu }}&sid={{ p.sid }}&tid1={{ p.tid1 }}&tid2={{ p.tid2 }}&kid={{ p.kid }}" class="btn-details">Szczegóły</a>
                         {% endif %}
                     </div>
                 </div>
