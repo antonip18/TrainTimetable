@@ -21,18 +21,30 @@
                     <th>Stacja</th>
                     <th>Przyjazd</th>
                     <th>Odjazd</th>
+                    <th>Peron</th>
+                    <th>Tor</th>
                 </tr>
             </thead>
             <tbody>
                 {% for stop in harmonogram %}
-                <tr>
+                <tr class="station-row" data-stacja="{{ stop.stacja }}" data-gmina="{{ stop.gmina }}" data-powiat="{{ stop.powiat }}" data-wojewodztwo="{{ stop.wojewodztwo }}">
                     <td class="station-name">{{ stop.stacja }}</td>
                     <td>{{ stop.przyjazd }}</td>
                     <td>{{ stop.odjazd }}</td>
+                    <td><span class="platform-tag">{{ stop.peron }}</span></td>
+                    <td><span class="track-tag">{{ stop.tor }}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <div class="segment-title">
+            <span>Mapa przebiegu trasy</span>
+        </div>
+        <div class="map-container" id="map-container" data-stops="{{ harmonogram | tojson | forceescape }}">
+            <img src="{{ url_for('static', filename='mapa_polski.png') }}" alt="Mapa Polski" class="map-image">
+            <svg class="map-overlay" id="map-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+        </div>
 
         <div class="segment-title">
             <span>Skład pociągu i udogodnienia</span>

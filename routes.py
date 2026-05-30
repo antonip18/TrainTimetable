@@ -2,7 +2,7 @@ from flask import render_template, request, abort
 from models import db, Stacja, Postoj, Trasa, Pociag, InfrastrukturaStacji, Przejazd, TrasaCykliczna
 from models import Sklad, Wagon, TypWagonu, ElementStaly, Miejsce
 from sqlalchemy.orm import aliased
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, text
 import datetime
 
 def time_to_minutes(t):
@@ -98,19 +98,46 @@ def register_routes(app):
         if data_podrozy == "":
             data_podrozy = None
 
-        postoje_trasy = db.session.query(Postoj).filter_by(id_trasy=id_trasy).order_by(Postoj.numer_postoju).all()
+        query = text("""
+            SELECT 
+                p.numer_postoju,
+                p.godzina_przyjazdu,
+                p.godzina_odjazdu,
+                i.numer_peronu,
+                i.numer_toru,
+                s.nazwa_stacji,
+                s.szerokosc_geograficzna,
+                s.dlugosc_geograficzna,
+                g.nazwa_gminy,
+                pow.nazwa_powiatu,
+                w.nazwa_wojewodztwa
+            FROM POSTOJE p
+            JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+            JOIN STACJE s ON i.id_stacji = s.id_stacji
+            LEFT JOIN GMINY g ON s.id_gminy = g.id_gminy
+            LEFT JOIN POWIATY pow ON g.id_powiatu = pow.id_powiatu
+            LEFT JOIN WOJEWODZTWA w ON pow.id_wojewodztwa = w.id_wojewodztwa
+            WHERE p.id_trasy = :id_trasy
+            ORDER BY p.numer_postoju
+        """)
+        postoje_rows = db.session.execute(query, {"id_trasy": id_trasy}).fetchall()
         
         harmonogram = []
-        for p in postoje_trasy:
-            infra = db.session.get(InfrastrukturaStacji, p.id_peronu_toru)
-            stacja = db.session.get(Stacja, infra.id_stacji) if infra else None
+        for r in postoje_rows:
+            czy_gmina_jest = r.nazwa_gminy is not None
+            
             harmonogram.append({
-                'numer': p.numer_postoju,
-                'stacja': stacja.nazwa_stacji if stacja else "Nieznana",
-                'peron': infra.numer_peronu if infra else "-",
-                'tor': infra.numer_toru if infra else "-",
-                'przyjazd': p.godzina_przyjazdu.strftime('%H:%M') if p.godzina_przyjazdu else 'Początek',
-                'odjazd': p.godzina_odjazdu.strftime('%H:%M') if p.godzina_odjazdu else 'Koniec'
+                'numer': r.numer_postoju,
+                'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
+                'peron': r.numer_peronu if r.numer_peronu is not None else "-",
+                'tor': r.numer_toru if r.numer_toru is not None else "-",
+                'przyjazd': r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else 'Początek',
+                'odjazd': r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else 'Koniec',
+                'lat': r.szerokosc_geograficzna,
+                'lon': r.dlugosc_geograficzna,
+                'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
+                'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
+                'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
             })
             
         try:
@@ -121,11 +148,11 @@ def register_routes(app):
         wagony_struktura = get_wagony_dla_trasy(id_trasy, b_date)
 
         return render_template('szczegoly_direct.html', 
-                               trasa=trasa, 
-                               harmonogram=harmonogram, 
-                               pociag=get_pociag_info(id_trasy, b_date), 
-                               data=data_podrozy if data_podrozy else "Brak daty",
-                               wagony_json=wagony_struktura)
+                            trasa=trasa, 
+                            harmonogram=harmonogram, 
+                            pociag=get_pociag_info(id_trasy, b_date), 
+                            data=data_podrozy if data_podrozy else "Brak daty",
+                            wagony_json=wagony_struktura)
 
     @app.route('/')
     def index():

@@ -66,3 +66,102 @@ function initTrainView() {
 }
 
 document.addEventListener('DOMContentLoaded', initTrainView);
+
+const POLAND_BOUNDS = {
+    north: 54.90,
+    south: 49.00,
+    west: 14.12,
+    east: 24.15
+};
+
+const globalTooltip = document.createElement('div');
+globalTooltip.className = 'custom-tooltip';
+document.body.appendChild(globalTooltip);
+
+function showTooltip(e, content) {
+    globalTooltip.innerHTML = content;
+    globalTooltip.style.display = 'block';
+    moveTooltip(e);
+}
+
+function moveTooltip(e) {
+    globalTooltip.style.left = (e.pageX + 15) + 'px';
+    globalTooltip.style.top = (e.pageY + 15) + 'px';
+}
+
+function hideTooltip() {
+    globalTooltip.style.display = 'none';
+}
+
+function getMapCoords(lat, lon) {
+    const x = ((lon - POLAND_BOUNDS.west) / (POLAND_BOUNDS.east - POLAND_BOUNDS.west)) * 100;
+    const y = ((POLAND_BOUNDS.north - lat) / (POLAND_BOUNDS.north - POLAND_BOUNDS.south)) * 100;
+    return { x, y };
+}
+
+function initRouteMap() {
+    const mapContainer = document.getElementById('map-container');
+    if (!mapContainer) return;
+
+    const stops = JSON.parse(mapContainer.getAttribute('data-stops'));
+    const svg = document.getElementById('map-svg');
+    if (!stops || stops.length === 0) return;
+
+    let pathD = "";
+
+    stops.forEach((stop, index) => {
+        if (!stop.lat || !stop.lon) return;
+
+        const coords = getMapCoords(stop.lat, stop.lon);
+
+        if (index === 0) {
+            pathD += `M ${coords.x} ${coords.y}`;
+        } else {
+            pathD += ` L ${coords.x} ${coords.y}`;
+        }
+
+        if (coords.x >= 0 && coords.x <= 100 && coords.y >= 0 && coords.y <= 100) {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', coords.x);
+            circle.setAttribute('cy', coords.y);
+            circle.setAttribute('r', '0.5');
+            circle.setAttribute('fill', '#2b6cff');
+            circle.setAttribute('stroke', '#ffffff');
+            circle.setAttribute('stroke-width', '0.1');
+            circle.setAttribute('class', 'map-marker');
+
+            const htmlContent = `<strong>${stop.stacja}</strong><br>Gmina: ${stop.gmina}<br>Powiat: ${stop.powiat}<br>Województwo: ${stop.wojewodztwo}`;
+            
+            circle.addEventListener('mousemove', (e) => showTooltip(e, htmlContent));
+            circle.addEventListener('mouseleave', hideTooltip);
+
+            svg.appendChild(circle);
+        }
+    });
+
+    if (pathD) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathD);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#2b6cff');
+        path.setAttribute('stroke-width', '0.3');
+        path.setAttribute('stroke-dasharray', '1, 0.5');
+        svg.insertBefore(path, svg.firstChild);
+    }
+
+    document.querySelectorAll('.station-row').forEach(row => {
+        const stacja = row.getAttribute('data-stacja');
+        const gmina = row.getAttribute('data-gmina');
+        const powiat = row.getAttribute('data-powiat');
+        const wojewodztwo = row.getAttribute('data-wojewodztwo');
+        
+        const htmlContent = `<strong>${stacja}</strong><br>Gmina: ${gmina}<br>Powiat: ${powiat}<br>Województwo: ${wojewodztwo}`;
+
+        row.addEventListener('mousemove', (e) => showTooltip(e, htmlContent));
+        row.addEventListener('mouseleave', hideTooltip);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initRouteMap();
+});
