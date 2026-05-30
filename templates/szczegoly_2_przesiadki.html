@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Szczegóły połączenia z dwoma przesiadkami</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="details-container">
+        <h2>Szczegóły podróży z dwoma przesiadką</h2>
+        <div class="date-sub">Data wyjazdu: <strong>{{ data }}</strong></div>
+
+        <div class="segment-title">
+            <span>Etap 1: Do stacji przesiadkowej</span>
+            <span class="train-tag" style="background: #eff6ff; color: #1e40af;">{{ pociag1.kategoria }} {{ pociag1.nazwa }}</span>
+        </div>
+        
+        <table class="timetable">
+            <thead>
+                <tr>
+                    <th>Stacja</th><th>Przyjazd</th><th>Odjazd</th><th>Peron</th><th>Tor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stop in h1 %}
+                <tr class="station-row" data-stacja="{{ stop.stacja }}">
+                    <td class="station-name">{{ stop.stacja }}</td>
+                    <td>{{ stop.przyjazd }}</td>
+                    <td>{{ stop.odjazd }}</td>
+                    <td><span class="platform-tag">{{ stop.peron }}</span></td>
+                    <td><span class="track-tag">{{ stop.tor }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="transfer-alert">
+            ⟳ Przesiadka na stacji: <strong>{{ h1[-1].stacja }}</strong>
+        </div>
+
+        <div class="segment-title">
+            <span>Etap 2: Do stacji przesiadkowej</span>
+            <span class="train-tag" style="background: #f0fdf4; color: #166534;">{{ pociag2.kategoria }} {{ pociag2.nazwa }}</span>
+        </div>
+        
+        <table class="timetable">
+            <thead>
+                <tr>
+                    <th>Stacja</th><th>Przyjazd</th><th>Odjazd</th><th>Peron</th><th>Tor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stop in h2 %}
+                <tr class="station-row" data-stacja="{{ stop.stacja }}">
+                    <td class="station-name">{{ stop.stacja }}</td>
+                    <td>{{ stop.przyjazd }}</td>
+                    <td>{{ stop.odjazd }}</td>
+                    <td><span class="platform-tag">{{ stop.peron }}</span></td>
+                    <td><span class="track-tag">{{ stop.tor }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="segment-title">
+            <span>Etap 3: Do stacji docelowej</span>
+            <span class="train-tag" style="background: #f0fdf4; color: #166534;">{{ pociag3.kategoria }} {{ pociag3.nazwa }}</span>
+        </div>
+        
+        <table class="timetable">
+            <thead>
+                <tr>
+                    <th>Stacja</th><th>Przyjazd</th><th>Odjazd</th><th>Peron</th><th>Tor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stop in h3 %}
+                <tr class="station-row" data-stacja="{{ stop.stacja }}">
+                    <td class="station-name">{{ stop.stacja }}</td>
+                    <td>{{ stop.przyjazd }}</td>
+                    <td>{{ stop.odjazd }}</td>
+                    <td><span class="platform-tag">{{ stop.peron }}</span></td>
+                    <td><span class="track-tag">{{ stop.tor }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="segment-title">
+            <span>Mapa przebiegu trasy</span>
+        </div>
+        <div class="map-container" id="map-container-transfer" 
+             data-stops-1="{{ h1 | tojson | forceescape }}" 
+             data-stops-2="{{ h2 | tojson | forceescape }}"
+             data-stops-3="{{ h3 | tojson | forceescape }}">
+            <img src="{{ url_for('static', filename='mapa_polski.png') }}" alt="Mapa Polski" class="map-image">
+            <svg class="map-overlay" id="map-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="segment-title">
+            <span>Skład pociągu: {{ pociag1.kategoria }} {{ pociag1.nazwa }}</span>
+        </div>
+        <div class="wagon-tabs" id="wagon-tabs-1"></div>
+        <div class="wagon-wrapper" id="wagon-data-bridge-1" data-wagony="{{ wagony_json1 | tojson | forceescape }}">
+            <div class="wagon-title" id="wagon-title-1">Wybierz wagon...</div>
+            <div class="wagon-grid" id="wagon-grid-1"></div>
+        </div>
+
+        <div class="segment-title" style="margin-top: 30px;">
+            <span>Skład pociągu: {{ pociag2.kategoria }} {{ pociag2.nazwa }}</span>
+        </div>
+        <div class="wagon-tabs" id="wagon-tabs-2"></div>
+        <div class="wagon-wrapper" id="wagon-data-bridge-2" data-wagony="{{ wagony_json2 | tojson | forceescape }}">
+            <div class="wagon-title" id="wagon-title-2">Wybierz wagon...</div>
+            <div class="wagon-grid" id="wagon-grid-2"></div>
+        </div>
+
+        <div class="segment-title" style="margin-top: 30px;">
+            <span>Skład pociągu: {{ pociag3.kategoria }} {{ pociag3.nazwa }}</span>
+        </div>
+        <div class="wagon-tabs" id="wagon-tabs-3"></div>
+        <div class="wagon-wrapper" id="wagon-data-bridge-3" data-wagony="{{ wagony_json3 | tojson | forceescape }}">
+            <div class="wagon-title" id="wagon-title-3">Wybierz wagon...</div>
+            <div class="wagon-grid" id="wagon-grid-3"></div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="legend-box" style="background: var(--seat);"></div> Standardowe</div>
+            <div class="legend-item"><div class="legend-box" style="background: var(--prm);"></div> Dla niepełnosprawnych</div>
+            <div class="legend-item"><div class="legend-box" style="background: var(--bike);"></div> Przewóz rowerów</div>
+            <div class="legend-item"><div class="legend-box" style="background: var(--table);"></div> Przy stoliku</div>
+        </div>
+
+        <a href="javascript:history.back()" class="back-btn">← Wróć do wyników</a>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/train_transfer2.js') }}"></script>
+</body>
+</html>
