@@ -7,6 +7,9 @@ import datetime
 import heapq
 from collections import defaultdict
 import itertools
+from flask import jsonify
+from flask import request, render_template, jsonify, redirect, flash
+from datetime import datetime
 
 def time_to_minutes(t):
     if t is None:
@@ -490,3 +493,112 @@ def register_routes(app):
                             trasa2=trasa2, pociag2=get_pociag_info(id2, b_date), h2=h2, wagony_json2=wagony_struktura2,
                             trasa3=trasa3, pociag3=get_pociag_info(id3, b_date), h3=h3, wagony_json3=wagony_struktura3,
                             data=data_podrozy)
+    
+
+def register_admin(app):
+    @app.route('/admin')
+    def admin_index():
+        return render_template('admin_index.html')
+
+    @app.route('/admin/trasa/nowa', methods=['GET', 'POST'])
+    def admin_nowa_trasa():
+        def zapisz_harmonogram_kierunkowy(id_trasy, id_pociagu, typ_kursowania, kierunek):
+            if typ_kursowania == 'cykliczna':
+                dni = request.form.getlist(f'dni_{kierunek}[]')
+                for dzien in dni:
+                    cykl = TrasaCykliczna(id_trasy=id_trasy, dzien_kursowania=dzien)
+                    db.session.add(cykl)
+            else:
+                daty = request.form.getlist(f'konkretne_daty_{kierunek}[]')
+                for d_str in daty:
+                    if d_str:
+                        data_obj = datetime.strptime(d_str, '%Y-%m-%d').date()
+                        przejazd = Przejazd(id_trasy=id_trasy, id_pociagu=id_pociagu, data_przejazdu=data_obj)
+                        db.session.add(przejazd)
+
+        if request.method == 'POST':
+            try:
+                nazwa_wspolna = request.form.get('nazwa_pociagu')
+                num_tam = request.form.get('numer_pociagu_tam')
+                num_powrot = request.form.get('numer_pociagu_powrot')
+                kategoria_pociagu = request.form.get('kategoria_pociagu')
+
+                pociag_tam = Pociag(nazwa=f"{nazwa_wspolna} {num_tam}", kategoria=kategoria_pociagu)
+                pociag_powrot = Pociag(nazwa=f"{nazwa_wspolna} {num_powrot}", kategoria=kategoria_pociagu)
+                
+                db.session.add(pociag_tam)
+                db.session.add(pociag_powrot)
+                db.session.flush()
+
+                id_typu_wagonu_list = request.form.getlist('id_typu_wagonu[]')
+                for idx, id_typu in enumerate(id_typu_wagonu_list):
+                    if id_typu:
+                        nowy_wagon = Wagon(id_typu=int(id_typu))
+                        db.session.add(nowy_wagon)
+                        db.session.flush()
+
+                        sklad_tam = Sklad(id_pociagu=pociag_tam.id_pociagu, id_wagonu=nowy_wagon.id_wagonu, numer_kolejnosci=idx + 1)
+                        sklad_powrot = Sklad(id_pociagu=pociag_powrot.id_pociagu, id_wagonu=nowy_wagon.id_wagonu, numer_kolejnosci=idx + 1)
+                        db.session.add(sklad_tam)
+                        db.session.add(sklad_powrot)
+
+                nazwa_trasy_tam = request.form.get('nazwa_trasy_tam')
+                nowa_trasa_tam = Trasa(nazwa_trasy=nazwa_trasy_tam)
+                db.session.add(nowa_trasa_tam)
+                db.session.flush()
+
+                id_infra_tam = request.form.getlist('id_infra_tam[]')
+                godz_przyjazd_tam = request.form.getlist('godz_przyjazd_tam[]')
+                godz_odjazd_tam = request.form.getlist('godz_odjazd_tam[]')
+
+                for idx, (infra_id, g_prz, g_odj) in enumerate(zip(id_infra_tam, godz_przyjazd_tam, godz_odjazd_tam)):
+                    postoj = Postoj(
+                        id_trasy=nowa_trasa_tam.id_trasy,
+                        numer_postoju=idx + 1,
+                        id_peronu_toru=int(infra_id),
+                        godzina_przyjazdu=g_prz if g_prz else None,
+                        godzina_odjazdu=g_odj if g_odj else None
+                    )
+                    db.session.add(postoj)
+
+                typ_kursowania_tam = request.form.get('typ_kursowania_tam')
+                zapisz_harmonogram_kierunkowy(nowa_trasa_tam.id_trasy, pociag_tam.id_pociagu, typ_kursowania_tam, 'tam')
+
+                nazwa_trasy_powrot = request.form.get('nazwa_trasy_powrot')
+                nowa_trasa_powrot = Trasa(nazwa_trasy=nazwa_trasy_powrot)
+                db.session.add(nowa_trasa_powrot)
+                db.session.flush()
+
+                id_infra_powrot = request.form.getlist('id_infra_powrot[]')
+                godz_przyjazd_powrot = request.form.getlist('godz_przyjazd_powrot[]')
+                godz_odjazd_powrot = request.form.getlist('godz_odjazd_powrot[]')
+
+                for idx, (infra_id, g_prz, g_odj) in enumerate(zip(id_infra_powrot, godz_przyjazd_powrot, godz_odjazd_powrot)):
+                    postoj_p = Postoj(
+                        id_trasy=nowa_trasa_powrot.id_trasy,
+                        numer_postoju=idx + 1,
+                        id_peronu_toru=int(infra_id),
+                        godzina_przyjazdu=g_prz if g_prz else None,
+                        godzina_odjazdu=g_odj if g_odj else None
+                    )
+                    db.session.add(postoj_p)
+
+                typ_kursowania_powrot = request.form.get('typ_kursowania_powrot')
+                zapisz_harmonogram_kierunkowy(nowa_trasa_powrot.id_trasy, pociag_powrot.id_pociagu, typ_kursowania_powrot, 'powrot')
+
+                db.session.commit()
+                flash("Obustronne trasy, pociągi oraz wspólny skład zostały pomyślnie zapisane!", "success")
+                return redirect('/admin')
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Błąd bazy danych (transakcja wycofana): {str(e)}", "danger")
+                
+                stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
+                typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
+                
+                return render_template('admin_nowa_trasa.html', stacje=stacje, typy_wagonow=typy_wagonow)
+
+        stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
+        typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
+        return render_template('admin_nowa_trasa.html', stacje=stacje, typy_wagonow=typy_wagonow)
