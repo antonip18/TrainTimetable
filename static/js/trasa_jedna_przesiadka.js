@@ -157,7 +157,12 @@ function initTransferMap() {
 
     document.querySelectorAll('.station-row').forEach(row => {
         const stacja = row.getAttribute('data-stacja');
-        row.addEventListener('mousemove', (e) => showTooltip(e, `<strong>${stacja}</strong>`));
+        const gmina = row.getAttribute('data-gmina');
+        const powiat = row.getAttribute('data-powiat');
+        const wojewodztwo = row.getAttribute('data-wojewodztwo');
+        
+        const htmlContent = `<strong>${stacja}</strong><br>Gmina: ${gmina}<br>Powiat: ${powiat}<br>Województwo: ${wojewodztwo}`;
+        row.addEventListener('mousemove', (e) => showTooltip(e, htmlContent));
         row.addEventListener('mouseleave', hideTooltip);
     });
 }

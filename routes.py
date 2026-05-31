@@ -50,15 +50,46 @@ def przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd):
     return przyjazd, odjazd
 
 
-def dopasuj_listy_postojow(infra_ids, godz_przyjazd, godz_odjazd):
+def dopasuj_listy_postojow(n, godz_przyjazd, godz_odjazd):
     """
-    Formularz HTML może wysłać krótsze listy godzin niż listę postojów.
-    Uzupełniamy brakujące wartości pustym stringiem, żeby zip() działał poprawnie.
+    Naprawia problem z brakującymi godzinami (zablokowane pola HTML).
+    Jeśli brakuje 1 elementu w przyjazdach, przeglądarka pominęła pierwszą stację.
+    Jeśli brakuje 1 elementu w odjazdach, pominęła ostatnią.
     """
-    n = len(infra_ids)
-    przyjazd = list(godz_przyjazd) + [''] * (n - len(godz_przyjazd))
-    odjazd = list(godz_odjazd) + [''] * (n - len(godz_odjazd))
+    przyjazd = list(godz_przyjazd)
+    if len(przyjazd) == n - 1:
+        przyjazd.insert(0, '')  # Wstawiamy puste na start!
+    elif len(przyjazd) < n:
+        przyjazd += [''] * (n - len(przyjazd))
+        
+    odjazd = list(godz_odjazd)
+    if len(odjazd) == n - 1:
+        odjazd.append('')  # Wstawiamy puste na koniec!
+    elif len(odjazd) < n:
+        odjazd += [''] * (n - len(odjazd))
+        
     return przyjazd[:n], odjazd[:n]
+
+def zapisz_postoje_dla_trasy(id_trasy, kierunek):
+    """Zapisuje listę postojów dla jednej trasy (kierunek tam lub powrót)."""
+    id_infra = request.form.getlist(f'id_infra_{kierunek}[]')
+    n = len(id_infra)
+    
+    godz_przyjazd, godz_odjazd = dopasuj_listy_postojow(
+        n,
+        request.form.getlist(f'godz_przyjazd_{kierunek}[]'),
+        request.form.getlist(f'godz_odjazd_{kierunek}[]'),
+    )
+    godz_przyjazd, godz_odjazd = przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd)
+
+    for idx, (infra_id, g_prz, g_odj) in enumerate(zip(id_infra, godz_przyjazd, godz_odjazd)):
+        db.session.add(Postoj(
+            id_trasy=id_trasy,
+            numer_postoju=idx + 1,
+            id_peronu_toru=int(infra_id),
+            godzina_przyjazdu=parse_time_string(g_prz),
+            godzina_odjazdu=parse_time_string(g_odj),
+        ))
 
 
 def waliduj_dane_nowej_trasy():
@@ -431,6 +462,17 @@ def register_routes(app):
                     continue
 
                 for edge in graph[u]:
+                    if edge['to'] == start_id:
+                        continue  # Nigdy nie wracamy na stację startową
+
+                    cycle = False
+                    for leg in path:
+                        if edge['to'] == leg['start_station'] or edge['to'] == leg['end_station']:
+                            cycle = True
+                            break
+                    if cycle:
+                        continue
+                    
                     is_transfer = (edge['route_id'] != curr_route)
                     next_trans = trans + (1 if is_transfer else 0)
 
@@ -550,7 +592,7 @@ def register_routes(app):
             list_t1 = [r[0] for r in stops_t1]
             list_t2 = [r[0] for r in stops_t2]
             
-            wspolne = list(set(list_t1).intersection(set(list_t2)))
+            wspolne = [s for s in list_t1 if s in list_t2]
             if len(wspolne) > 0:
                 tid = wspolne[0]
             else:
@@ -562,29 +604,48 @@ def register_routes(app):
                 kid = list_t2[-1] if list_t2 else 0
 
         def get_sliced_stops(id_trasy, start_stacja_id, end_stacja_id):
-            wycinek_postojow = db.session.query(Postoj, Stacja, InfrastrukturaStacji).\
-                join(InfrastrukturaStacji, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
-                join(Stacja, InfrastrukturaStacji.id_stacji == Stacja.id_stacji).\
-                filter(Postoj.id_trasy == id_trasy).\
-                order_by(Postoj.numer_postoju).all()
+            # Używamy surowego SQL z złączeniami (LEFT JOIN), tak jak w szczegoly_direct
+            query = text("""
+                SELECT 
+                    p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu,
+                    i.numer_peronu, i.numer_toru, s.id_stacji, s.nazwa_stacji,
+                    s.szerokosc_geograficzna, s.dlugosc_geograficzna,
+                    g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa
+                FROM POSTOJE p
+                JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+                JOIN STACJE s ON i.id_stacji = s.id_stacji
+                LEFT JOIN GMINY g ON s.id_gminy = g.id_gminy
+                LEFT JOIN POWIATY pow ON g.id_powiatu = pow.id_powiatu
+                LEFT JOIN WOJEWODZTWA w ON pow.id_wojewodztwa = w.id_wojewodztwa
+                WHERE p.id_trasy = :id_trasy
+                ORDER BY p.numer_postoju
+            """)
+            wycinek_postojow = db.session.execute(query, {"id_trasy": id_trasy}).fetchall()
                 
             res = []
             recording = False
             
-            for p, stacja, infra in wycinek_postojow:
-                if stacja.id_stacji == start_stacja_id:
+            for r in wycinek_postojow:
+                # r.id_stacji odpowiada kolumnie s.id_stacji z zapytania SQL
+                if r.id_stacji == start_stacja_id:
                     recording = True
                 if recording:
+                    czy_gmina_jest = r.nazwa_gminy is not None
                     res.append({
-                        'numer': p.numer_postoju,
-                        'stacja': stacja.nazwa_stacji,
-                        'peron': infra.numer_peronu if infra.numer_peronu is not None else "-",
-                        'tor': infra.numer_toru if infra.numer_toru is not None else "-",
-                        'przyjazd': p.godzina_przyjazdu.strftime('%H:%M') if p.godzina_przyjazdu else 'Początek',
-                        'odjazd': p.godzina_odjazdu.strftime('%H:%M') if p.godzina_odjazdu else 'Koniec',
-                        'lat': stacja.szerokosc_geograficzna, 'lon': stacja.dlugosc_geograficzna
+                        'numer': r.numer_postoju,
+                        'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
+                        'peron': r.numer_peronu if r.numer_peronu is not None else "-",
+                        'tor': r.numer_toru if r.numer_toru is not None else "-",
+                        'przyjazd': r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else 'Początek',
+                        'odjazd': r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else 'Koniec',
+                        'lat': r.szerokosc_geograficzna, 
+                        'lon': r.dlugosc_geograficzna,
+                        # Dodajemy brakujące informacje terytorialne:
+                        'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
+                        'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
+                        'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
                     })
-                if stacja.id_stacji == end_stacja_id and recording:
+                if r.id_stacji == end_stacja_id and recording:
                     break
             return res
 
@@ -621,29 +682,48 @@ def register_routes(app):
         kid = request.args.get('kid', default=0, type=int) or request.form.get('kid', default=0, type=int)
 
         def get_sliced_stops(id_trasy, start_stacja_id, end_stacja_id):
-            wycinek_postojow = db.session.query(Postoj, Stacja, InfrastrukturaStacji).\
-                join(InfrastrukturaStacji, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
-                join(Stacja, InfrastrukturaStacji.id_stacji == Stacja.id_stacji).\
-                filter(Postoj.id_trasy == id_trasy).\
-                order_by(Postoj.numer_postoju).all()
+            # Używamy surowego SQL z złączeniami (LEFT JOIN), tak jak w szczegoly_direct
+            query = text("""
+                SELECT 
+                    p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu,
+                    i.numer_peronu, i.numer_toru, s.id_stacji, s.nazwa_stacji,
+                    s.szerokosc_geograficzna, s.dlugosc_geograficzna,
+                    g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa
+                FROM POSTOJE p
+                JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+                JOIN STACJE s ON i.id_stacji = s.id_stacji
+                LEFT JOIN GMINY g ON s.id_gminy = g.id_gminy
+                LEFT JOIN POWIATY pow ON g.id_powiatu = pow.id_powiatu
+                LEFT JOIN WOJEWODZTWA w ON pow.id_wojewodztwa = w.id_wojewodztwa
+                WHERE p.id_trasy = :id_trasy
+                ORDER BY p.numer_postoju
+            """)
+            wycinek_postojow = db.session.execute(query, {"id_trasy": id_trasy}).fetchall()
                 
             res = []
             recording = False
             
-            for p, stacja, infra in wycinek_postojow:
-                if stacja.id_stacji == start_stacja_id:
+            for r in wycinek_postojow:
+                # r.id_stacji odpowiada kolumnie s.id_stacji z zapytania SQL
+                if r.id_stacji == start_stacja_id:
                     recording = True
                 if recording:
+                    czy_gmina_jest = r.nazwa_gminy is not None
                     res.append({
-                        'numer': p.numer_postoju,
-                        'stacja': stacja.nazwa_stacji,
-                        'peron': infra.numer_peronu if infra.numer_peronu is not None else "-",
-                        'tor': infra.numer_toru if infra.numer_toru is not None else "-",
-                        'przyjazd': p.godzina_przyjazdu.strftime('%H:%M') if p.godzina_przyjazdu else 'Początek',
-                        'odjazd': p.godzina_odjazdu.strftime('%H:%M') if p.godzina_odjazdu else 'Koniec',
-                        'lat': stacja.szerokosc_geograficzna, 'lon': stacja.dlugosc_geograficzna
+                        'numer': r.numer_postoju,
+                        'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
+                        'peron': r.numer_peronu if r.numer_peronu is not None else "-",
+                        'tor': r.numer_toru if r.numer_toru is not None else "-",
+                        'przyjazd': r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else 'Początek',
+                        'odjazd': r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else 'Koniec',
+                        'lat': r.szerokosc_geograficzna, 
+                        'lon': r.dlugosc_geograficzna,
+                        # Dodajemy brakujące informacje terytorialne:
+                        'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
+                        'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
+                        'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
                     })
-                if stacja.id_stacji == end_stacja_id and recording:
+                if r.id_stacji == end_stacja_id and recording:
                     break
             return res
 
