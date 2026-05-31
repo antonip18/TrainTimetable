@@ -23,7 +23,7 @@
     <div class="container">
         <h2>Kreator Nowego Połączenia Dwukierunkowego</h2>
         
-        <form action="/admin/trasa/nowa" method="POST">
+        <form id="form-nowa-trasa" action="/admin/trasa/nowa" method="POST">
             
             <div class="sekcja">
                 <h3>1. Podstawowe Dane Tras</h3>
@@ -128,7 +128,11 @@
 
             <div class="sekcja">
                 <h3>4. Harmonogramy Postojów (Modyfikacja stacji wyłącznie pośrodku)</h3>
-                
+                <p style="color:#64748b; font-size:13px; margin-bottom:15px;">
+                    Pierwsza stacja: wpisz tylko <strong>odjazd</strong>.
+                    Ostatnia stacja: wpisz tylko <strong>przyjazd</strong>.
+                    Stacje pośrednie: obie godziny.
+                </p>
                 <div style="margin-bottom: 35px;">
                     <h4>Kierunek: TAM</h4>
                     <table id="postoje_table_tam">
@@ -163,8 +167,8 @@
                                                 <option value="{{ infra_tam[i] }}" selected>Wczytywanie...</option>
                                             </select>
                                         </td>
-                                        <td><input type="time" name="godz_przyjazd_tam[]" value="{{ przyjazd_tam[i] }}"></td>
-                                        <td><input type="time" name="godz_odjazd_tam[]" value="{{ odjazd_tam[i] }}"></td>
+                                        <td><input type="time" name="godz_przyjazd_tam[]" class="inp-przyjazd" value="{{ przyjazd_tam[i] }}"></td>
+                                        <td><input type="time" name="godz_odjazd_tam[]" class="inp-odjazd" value="{{ odjazd_tam[i] }}"></td>
                                         <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this, 'tam')">Usuń</button></td>
                                     </tr>
                                 {% endfor %}
@@ -208,8 +212,8 @@
                                                 <option value="{{ infra_powrot[i] }}" selected>Wczytywanie...</option>
                                             </select>
                                         </td>
-                                        <td><input type="time" name="godz_przyjazd_powrot[]" value="{{ przyjazd_powrot[i] }}"></td>
-                                        <td><input type="time" name="godz_odjazd_powrot[]" value="{{ odjazd_powrot[i] }}"></td>
+                                        <td><input type="time" name="godz_przyjazd_powrot[]" class="inp-przyjazd" value="{{ przyjazd_powrot[i] }}"></td>
+                                        <td><input type="time" name="godz_odjazd_powrot[]" class="inp-odjazd" value="{{ odjazd_powrot[i] }}"></td>
                                         <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this, 'powrot')">Usuń</button></td>
                                     </tr>
                                 {% endfor %}
