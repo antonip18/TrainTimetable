@@ -1,12 +1,15 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from config import Config
+"""
+Prosty skrypt testowy – sprawdza, czy aplikacja łączy się z bazą PostgreSQL.
 
-app = Flask(__name__)
-app.config.from_object(Config)
-db = SQLAlchemy(app)
+Uruchomienie: python test_db.py
+"""
+
+from app import app
+from models import db
+
 
 def testuj_polaczenie():
+    """Wykonuje dwa proste zapytania SQL, żeby potwierdzić działanie połączenia."""
     try:
         with app.app_context():
             db.session.execute(db.text("SELECT 1"))
@@ -17,6 +20,7 @@ def testuj_polaczenie():
 
     except Exception as e:
         print("BŁĄD:", e)
+
 
 if __name__ == "__main__":
     testuj_polaczenie()

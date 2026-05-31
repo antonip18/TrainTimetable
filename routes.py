@@ -1,19 +1,39 @@
-from flask import render_template, request, abort
+"""
+Trasy (endpointy) aplikacji webowej.
+
+Ten plik zawiera:
+- wyszukiwarkę połączeń kolejowych (algorytm Dijkstry),
+- strony ze szczegółami tras,
+- panel administratora do dodawania i usuwania tras.
+"""
+
+from flask import render_template, request, abort, jsonify, redirect, flash
 from models import db, Stacja, Postoj, Trasa, Pociag, InfrastrukturaStacji, Przejazd, TrasaCykliczna
 from models import Sklad, Wagon, TypWagonu, ElementStaly, Miejsce
-from sqlalchemy.orm import aliased
-from sqlalchemy import and_, or_, text
+from sqlalchemy import or_, text
 import datetime
 import heapq
 from collections import defaultdict
 import itertools
-from flask import jsonify
-from flask import request, render_template, jsonify, redirect, flash
+
 
 def time_to_minutes(t):
+    """Zamienia obiekt datetime.time na liczbę minut od północy (np. 08:30 -> 510)."""
     if t is None:
         return 0
     return t.hour * 60 + t.minute
+
+
+def parse_time_string(czas_str):
+    """Zamienia tekst z formularza HTML (np. '08:30') na obiekt datetime.time."""
+    if not czas_str:
+        return None
+    try:
+        godzina, minuta = map(int, czas_str.split(':'))
+        return datetime.time(godzina, minuta)
+    except (ValueError, AttributeError):
+        return None
+
 
 def format_minutes(m):
     hours = m // 60
@@ -23,6 +43,7 @@ def format_minutes(m):
     return f"{minutes}m"
 
 def get_pociag_info(id_trasy, data_podrozy_obj=None):
+    """Pobiera kategorię i nazwę pociągu przypisanego do trasy (dla danej daty lub dowolnej)."""
     if data_podrozy_obj:
         przejazd = db.session.query(Pociag).join(Przejazd).filter(
             Przejazd.id_trasy == id_trasy, 
@@ -37,6 +58,7 @@ def get_pociag_info(id_trasy, data_podrozy_obj=None):
     }
 
 def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None):
+    """Buduje listę wagonów ze schematem miejsc – używane na stronie szczegółów połączenia."""
     q = db.session.query(Przejazd).filter(Przejazd.id_trasy == id_trasy)
     if data_podrozy_obj:
         q = q.filter(Przejazd.data_przejazdu == data_podrozy_obj)
@@ -85,8 +107,11 @@ def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None):
 
 
 def register_routes(app):
+    """Rejestruje trasy widoczne dla użytkownika końcowego (wyszukiwarka + szczegóły)."""
+
     @app.route('/szczegoly/direct/<int:id_trasy>', methods=['GET', 'POST'])
     def szczegoly_direct(id_trasy):
+        """Strona szczegółów połączenia bezpośredniego (bez przesiadek)."""
         trasa = db.session.get(Trasa, id_trasy)
         if not trasa:
             abort(404)
@@ -143,12 +168,17 @@ def register_routes(app):
 
     @app.route('/')
     def index():
+        """Strona główna z formularzem wyszukiwania połączeń."""
         wszystkie_stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         domyslna_data = datetime.date.today().strftime('%Y-%m-%d')
         return render_template('index.html', stacje=wszystkie_stacje, domyslna_data=domyslna_data)
 
     @app.route('/szukaj', methods=['POST', 'GET'])
     def szukaj():
+        """
+        Wyszukuje połączenia między dwiema stacjami.
+        Używa algorytmu Dijkstry z limitem maks. 2 przesiadek.
+        """
         src = request.form if request.method == 'POST' else request.args
         start_id = src.get('stacja_start')
         koniec_id = src.get('stacja_koniec')
@@ -206,6 +236,10 @@ def register_routes(app):
             trasy_map[r.id_trasy]['stops'].append(r)
 
         def rozwiazanie_optymalne_dijkstra():
+            """
+            Szuka najlepszych połączeń grafem stacji.
+            Każda krawędź grafu to odcinek między dwoma kolejnymi postojami tej samej trasy.
+            """
             graph = defaultdict(list)
             tie_breaker = itertools.count()
             
@@ -298,6 +332,7 @@ def register_routes(app):
             return mapuj_na_szablony(znalezione_polaczenia)
             
         def mapuj_na_szablony(surowe_trasy):
+            """Formatuje wyniki algorytmu do struktury zrozumiałej dla szablonu HTML."""
             gotowe = []
             for arr_min, trans, dep_min, path in surowe_trasy:
                 total_minutes = arr_min - dep_min
@@ -356,6 +391,7 @@ def register_routes(app):
 
     @app.route('/szczegoly/transfer/<int:id1>/<int:id2>', methods=['GET', 'POST'])
     def szczegoly_transfer(id1, id2):
+        """Strona szczegółów połączenia z jedną przesiadką."""
         trasa1 = db.session.get(Trasa, id1)
         trasa2 = db.session.get(Trasa, id2)
         if not trasa1 or not trasa2:
@@ -434,6 +470,7 @@ def register_routes(app):
 
     @app.route('/szczegoly/transfer2/<int:id1>/<int:id2>/<int:id3>', methods=['GET', 'POST'])
     def szczegoly_transfer2(id1, id2, id3):
+        """Strona szczegółów połączenia z dwiema przesiadkami."""
         trasa1 = db.session.get(Trasa, id1)
         trasa2 = db.session.get(Trasa, id2)
         trasa3 = db.session.get(Trasa, id3)
@@ -494,13 +531,19 @@ def register_routes(app):
                             data=data_podrozy)
     
 def register_admin(app):
+    """Rejestruje trasy panelu administratora (dodawanie, edycja, usuwanie tras)."""
+
     @app.route('/admin')
     def admin_index():
+        """Strona główna panelu administratora."""
         return render_template('admin_index.html')
 
     @app.route('/admin/trasa/nowa', methods=['GET', 'POST'])
     def admin_nowa_trasa():
+        """Formularz tworzenia nowej trasy dwukierunkowej wraz z pociągiem i składem."""
+
         def zapisz_harmonogram_kierunkowy(id_trasy, id_pociagu, typ_kursowania, kierunek):
+            """Zapisuje harmonogram: albo cykliczny (dni tygodnia), albo jednorazowy (daty)."""
             if typ_kursowania == 'cykliczna':
                 dni = request.form.getlist(f'dni_{kierunek}[]')
                 for dzien in dni:
@@ -554,8 +597,8 @@ def register_admin(app):
                         id_trasy=nowa_trasa_tam.id_trasy,
                         numer_postoju=idx + 1,
                         id_peronu_toru=int(infra_id),
-                        godzina_przyjazdu=g_prz if g_prz else None,
-                        godzina_odjazdu=g_odj if g_odj else None
+                        godzina_przyjazdu=parse_time_string(g_prz),
+                        godzina_odjazdu=parse_time_string(g_odj)
                     )
                     db.session.add(postoj)
 
@@ -576,8 +619,8 @@ def register_admin(app):
                         id_trasy=nowa_trasa_powrot.id_trasy,
                         numer_postoju=idx + 1,
                         id_peronu_toru=int(infra_id),
-                        godzina_przyjazdu=g_prz if g_prz else None,
-                        godzina_odjazdu=g_odj if g_odj else None
+                        godzina_przyjazdu=parse_time_string(g_prz),
+                        godzina_odjazdu=parse_time_string(g_odj)
                     )
                     db.session.add(postoj_p)
 
@@ -603,11 +646,29 @@ def register_admin(app):
     
     @app.route('/admin/trasa/od_do', methods=['GET'])
     def admin_trasa_od_do():
+        """Wyszukiwarka tras do edycji lub usunięcia."""
         stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         return render_template('admin_trasy_lista.html', stacje=stacje)
+
+    @app.route('/api/infrastruktura/<int:id_stacji>')
+    def api_infrastruktura(id_stacji):
+        """
+        API zwracające perony i tory dla wybranej stacji.
+        Używane przez JavaScript w formularzu dodawania nowej trasy.
+        """
+        infrastruktura = db.session.query(InfrastrukturaStacji).filter_by(id_stacji=id_stacji).all()
+        return jsonify([
+            {
+                'id': element.id,
+                'peron': element.numer_peronu,
+                'tor': element.numer_toru
+            }
+            for element in infrastruktura
+        ])
     
     @app.route('/api/trasy/od_do', methods=['GET'])
     def api_trasy_od_do():
+        """API zwracające trasy przejeżdżające między dwiema stacjami."""
         start_id = request.args.get('start', type=int)
         end_id = request.args.get('end', type=int)
 

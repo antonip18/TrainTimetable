@@ -1,6 +1,14 @@
-const bridgeElement = document.getElementById('wagon-data-bridge');
-const trainData = JSON.parse(bridgeElement.getAttribute('data-wagony'));
+/**
+ * Skrypt strony szczegółów połączenia bezpośredniego.
+ * Rysuje schemat wagonów oraz mapę trasy na tle Polski.
+ */
 
+const bridgeElement = document.getElementById('wagon-data-bridge');
+const trainData = bridgeElement
+    ? JSON.parse(bridgeElement.getAttribute('data-wagony') || '[]')
+    : [];
+
+/** Rysuje układ miejsc i elementów stałych w wybranym wagonie. */
 function renderWagon(wagon) {
     const grid = document.getElementById('wagon-grid');
     const title = document.getElementById('wagon-title');

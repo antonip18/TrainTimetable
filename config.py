@@ -1,7 +1,16 @@
 import os
 
 class Config:
-    # musisz miec Baze danych o takich parametrach: 
+    """
+    Ustawienia aplikacji Flask.
+    Przed uruchomieniem upewnij się, że baza PostgreSQL istnieje
+    (skrypty w folderze baza_danych/).
+    """
+
+    # Klucz sesji – potrzebny m.in. do komunikatów flash w panelu admina
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-klucz-tylko-do-projektu-studia')
+
+    # Parametry połączenia z bazą danych PostgreSQL
     DB_USER = 'pociag'
     DB_PASSWORD = 'wagon'
     DB_HOST = 'localhost'
