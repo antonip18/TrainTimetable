@@ -493,7 +493,6 @@ def register_routes(app):
                             trasa3=trasa3, pociag3=get_pociag_info(id3, b_date), h3=h3, wagony_json3=wagony_struktura3,
                             data=data_podrozy)
     
-
 def register_admin(app):
     @app.route('/admin')
     def admin_index():
@@ -511,7 +510,7 @@ def register_admin(app):
                 daty = request.form.getlist(f'konkretne_daty_{kierunek}[]')
                 for d_str in daty:
                     if d_str:
-                        data_obj = datetime.strptime(d_str, '%Y-%m-%d').date()
+                        data_obj = datetime.datetime.strptime(d_str, '%Y-%m-%d').date()
                         przejazd = Przejazd(id_trasy=id_trasy, id_pociagu=id_pociagu, data_przejazdu=data_obj)
                         db.session.add(przejazd)
 
@@ -601,3 +600,116 @@ def register_admin(app):
         stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
         return render_template('admin_nowa_trasa.html', stacje=stacje, typy_wagonow=typy_wagonow)
+    
+    @app.route('/admin/trasa/od_do', methods=['GET'])
+    def admin_trasa_od_do():
+        stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
+        return render_template('admin_trasy_lista.html', stacje=stacje)
+    
+    @app.route('/api/trasy/od_do', methods=['GET'])
+    def api_trasy_od_do():
+        start_id = request.args.get('start', type=int)
+        end_id = request.args.get('end', type=int)
+
+        if not start_id or not end_id:
+            return jsonify([])
+
+        query = text("""
+            SELECT DISTINCT t.id_trasy, t.nazwa_trasy, prz.id_pociagu, poc.nazwa as nazwa_pociagu
+            FROM trasy t
+            JOIN postoje p1 ON t.id_trasy = p1.id_trasy
+            JOIN postoje p2 ON t.id_trasy = p2.id_trasy
+            JOIN infrastruktura_stacji i1 ON p1.id_peronu_toru = i1.id
+            JOIN infrastruktura_stacji i2 ON p2.id_peronu_toru = i2.id
+            LEFT JOIN przejazdy prz ON t.id_trasy = prz.id_trasy
+            LEFT JOIN pociagi poc ON prz.id_pociagu = poc.id_pociagu
+            WHERE i1.id_stacji = :start_id 
+              AND i2.id_stacji = :end_id
+              AND p1.numer_postoju < p2.numer_postoju
+        """)
+        
+        wyniki = db.session.execute(query, {'start_id': start_id, 'end_id': end_id}).fetchall()
+        
+        trasy_lista = []
+        for r in wyniki:
+            nazwa_handlowa = r.nazwa_pociagu.rsplit(' ', 1)[0] if r.nazwa_pociagu else ""
+            
+            trasy_lista.append({
+                'id_trasy': r.id_trasy,
+                'nazwa_trasy': r.nazwa_trasy,
+                'id_pociagu': r.id_pociagu,
+                'nazwa_pociagu': r.nazwa_pociagu,
+                'nazwa_handlowa': nazwa_handlowa
+            })
+
+        return jsonify(trasy_lista)
+    
+
+    @app.route('/admin/trasa/zarzadzaj/<int:id_trasy>', methods=['GET'])
+    def admin_zarzadzaj_trasa(id_trasy):
+        trasa_tam = db.session.get(Trasa, id_trasy)
+        if not trasa_tam:
+            flash("Nie znaleziono takiej trasy.", "danger")
+            return redirect('/admin/trasa/od_do')
+
+        przejazd = db.session.query(Przejazd).filter_by(id_trasy=id_trasy).first()
+        pociag_tam = db.session.get(Pociag, przejazd.id_pociagu) if przejazd else None
+
+        cykle_tam = db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy).all()
+        przejazdy_tam = db.session.query(Przejazd).filter_by(id_trasy=id_trasy).order_by(Przejazd.data_przejazdu).all()
+
+        return render_template('admin_zarzadzaj_trasa.html', 
+                               trasa_tam=trasa_tam, pociag_tam=pociag_tam, cykle_tam=cykle_tam, przejazdy_tam=przejazdy_tam)
+    
+    @app.route('/admin/trasa/usun_calkowicie', methods=['POST'])
+    def admin_usun_calkowicie():
+        id_trasy_tam = request.form.get('id_trasy_tam', type=int)
+        id_trasy_powrot = request.form.get('id_trasy_powrot', type=int)
+
+        try:
+            tras_ids = [id_trasy_tam]
+            if id_trasy_powrot:
+                tras_ids.append(id_trasy_powrot)
+
+            for tid in tras_ids:
+                if tid:
+                    db.session.query(Postoj).filter_by(id_trasy=tid).delete()
+                    db.session.query(TrasaCykliczna).filter_by(id_trasy=tid).delete()
+                    db.session.query(Przejazd).filter_by(id_trasy=tid).delete()
+                    db.session.query(Trasa).filter_by(id_trasy=tid).delete()
+            
+            db.session.commit()
+            flash("Wybrane trasy (i powiązane z nimi harmonogramy) zostały usunięte. Wagony i Pociągi pozostały w bazie.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Wystąpił błąd podczas usuwania trasy: {str(e)}", "danger")
+
+        return redirect('/admin/trasa/od_do')
+    
+    @app.route('/admin/trasa/usun_harmonogram', methods=['POST'])
+    def admin_usun_harmonogram():
+        try:
+            if 'dzien_cyklu' in request.form:
+                dzien = request.form.get('dzien_cyklu')
+                id_trasy = request.form.get('id_trasy', type=int)
+                db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy, dzien_kursowania=dzien).delete()
+                msg = f"Usunięto cykliczny kurs: {dzien}."
+
+            elif 'data_przejazdu' in request.form:
+                data_str = request.form.get('data_przejazdu')
+                id_trasy = request.form.get('id_trasy', type=int)
+                id_pociagu = request.form.get('id_pociagu', type=int)
+                data_obj = datetime.datetime.strptime(data_str, '%Y-%m-%d').date()
+                db.session.query(Przejazd).filter_by(id_trasy=id_trasy, id_pociagu=id_pociagu, data_przejazdu=data_obj).delete()
+                msg = f"Usunięto przejazd z dnia {data_str}."
+            
+            db.session.commit()
+            flash(msg, "success")
+            
+            base_trasa = request.form.get('base_trasa', type=int)
+            return redirect(f'/admin/trasa/zarzadzaj/{base_trasa}')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Wystąpił błąd: {str(e)}", "danger")
+            return redirect('/admin/trasa/od_do')

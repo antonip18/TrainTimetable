@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zarządzaj Trasą</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_nowa_trasa_style.css') }}">
+    <style>
+        .warning-box { border-left: 4px solid #f59e0b; background: #fffbeb; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .danger-zone { border: 2px solid #ef4444; padding: 20px; border-radius: 8px; text-align: center; background: #fef2f2; margin-top: 30px;}
+        table.compact td, table.compact th { padding: 8px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/admin/trasa/od_do" class="btn btn-secondary" style="margin-bottom: 20px;">&larr; Wróć do wyszukiwarki</a>
+        
+        <h2>Zarządzanie Trasą i Harmonogramem</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div style="padding: 15px; border-radius: 4px; background-color: {% if category == 'success' %}#dff0d8{% else %}#f2dede{% endif %}; color: {% if category == 'success' %}#3c763d{% else %}#a94442{% endif %};">
+                    {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="warning-box">
+            Modyfikujesz ustawienia kursowania. Usunięcie elementów wpłynie natychmiast na dostępność wyszukiwania tych pociągów przez klientów.
+        </div>
+
+        <div class="grid-2">
+            <div class="sekcja">
+                <h4>Trasa: {{ trasa_tam.nazwa_trasy }}</h4>
+                <p>Pociąg: {{ pociag_tam.nazwa if pociag_tam else 'Brak' }}</p>
+                <hr>
+                
+                <h5>Cykliczne kursy (dni tygodnia):</h5>
+                {% if cykle_tam %}
+                    <table class="compact">
+                        {% for c in cykle_tam %}
+                        <tr>
+                            <td>{{ c.dzien_kursowania }}</td>
+                            <td style="text-align: right;">
+                                <form action="/admin/trasa/usun_harmonogram" method="POST" style="margin:0;">
+                                    <input type="hidden" name="base_trasa" value="{{ trasa_tam.id_trasy }}">
+                                    <input type="hidden" name="id_trasy" value="{{ trasa_tam.id_trasy }}">
+                                    <input type="hidden" name="dzien_cyklu" value="{{ c.dzien_kursowania }}">
+                                    <button type="submit" class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;">Usuń dzień</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    <p style="color: #64748b; font-size: 13px;">Brak wpisów cyklicznych.</p>
+                {% endif %}
+
+                <h5 style="margin-top:20px;">Jednorazowe przejazdy (konkretne daty):</h5>
+                {% if przejazdy_tam %}
+                    <table class="compact">
+                        {% for p in przejazdy_tam %}
+                        <tr>
+                            <td>{{ p.data_przejazdu }}</td>
+                            <td style="text-align: right;">
+                                <form action="/admin/trasa/usun_harmonogram" method="POST" style="margin:0;">
+                                    <input type="hidden" name="base_trasa" value="{{ trasa_tam.id_trasy }}">
+                                    <input type="hidden" name="id_trasy" value="{{ trasa_tam.id_trasy }}">
+                                    <input type="hidden" name="id_pociagu" value="{{ pociag_tam.id_pociagu }}">
+                                    <input type="hidden" name="data_przejazdu" value="{{ p.data_przejazdu }}">
+                                    <button type="submit" class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;">Usuń datę</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    <p style="color: #64748b; font-size: 13px;">Brak wpisów dla dat jednorazowych.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="danger-zone">
+            <h3>CAŁKOWITE USUNIĘCIE TRASY</h3>
+            <p>Usunięcie trasy usunie definicję trasy oraz jej wszystkie postoje i harmonogramy. <br><b>Wagony i rekordy Pociągów pozostaną w systemie</b>, gotowe do podpięcia pod inną trasę.</p>
+            
+            <form action="/admin/trasa/usun_calkowicie" method="POST" onsubmit="return confirm('Czy na pewno chcesz bezpowrotnie usunąć CAŁĄ TRASĘ (oraz ew. powrotną)?');">
+                <input type="hidden" name="id_trasy_tam" value="{{ trasa_tam.id_trasy }}">
+                {% if trasa_powrot %}
+                    <input type="hidden" name="id_trasy_powrot" value="{{ trasa_powrot.id_trasy }}">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:inline-flex; align-items:center; gap:8px;">
+                            <input type="checkbox" name="usun_powrot" value="1" checked disabled> Usuń automatycznie również połączoną trasę powrotną
+                        </label>
+                    </div>
+                {% endif %}
+                <button type="submit" class="btn btn-danger" style="font-size: 16px; padding: 12px 30px;">Zniszcz trasę na stałe</button>
+            </form>
+        </div>
+
+    </div>
+</body>
+</html>

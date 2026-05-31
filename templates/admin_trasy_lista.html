@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zarządzaj Trasami (Edycja/Usuwanie)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_nowa_trasa_style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <a href="/admin" class="btn btn-secondary" style="margin-bottom: 20px;">&larr; Wróć do panelu</a>
+        <h2>Wyszukaj Trasy do Edycji/Usunięcia</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div style="padding: 15px; border-radius: 4px; background-color: {% if category == 'success' %}#dff0d8{% else %}#f2dede{% endif %}; color: {% if category == 'success' %}#3c763d{% else %}#a94442{% endif %};">
+                    <strong>Informacja:</strong> {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="sekcja">
+            <div class="grid-2">
+                <div>
+                    <label>Stacja początkowa:</label>
+                    <select id="search_start" onchange="wyszukajTrasy()">
+                        <option value="">-- Wybierz --</option>
+                        {% for s in stacje %}
+                            <option value="{{ s.id_stacji }}">{{ s.nazwa_stacji }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Stacja końcowa:</label>
+                    <select id="search_end" onchange="wyszukajTrasy()">
+                        <option value="">-- Wybierz --</option>
+                        {% for s in stacje %}
+                            <option value="{{ s.id_stacji }}">{{ s.nazwa_stacji }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div id="wyniki_tras" style="margin-top: 30px;">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        async function wyszukajTrasy() {
+            const startId = document.getElementById('search_start').value;
+            const endId = document.getElementById('search_end').value;
+            const wynikiContainer = document.getElementById('wyniki_tras');
+
+            if (!startId || !endId) {
+                wynikiContainer.innerHTML = '';
+                return;
+            }
+
+            wynikiContainer.innerHTML = '<h4>Szukam tras...</h4>';
+
+            try {
+                const response = await fetch(`/api/trasy/od_do?start=${startId}&end=${endId}`);
+                const trasy = await response.json();
+
+                if (trasy.length === 0) {
+                    wynikiContainer.innerHTML = '<h4>Brak tras na wybranym odcinku.</h4>';
+                    return;
+                }
+
+                let html = '<h4>Znalezione trasy:</h4><ul style="list-style: none; padding: 0;">';
+                trasy.forEach(t => {
+                    html += `
+                        <li style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${t.nazwa_trasy}</strong><br>
+                                <span style="color: #64748b; font-size: 13px;">Obsługiwane przez: ${t.nazwa_pociagu || 'Brak przypisanego pociągu'}</span>
+                            </div>
+                            <a href="/admin/trasa/zarzadzaj/${t.id_trasy}" class="btn">Zarządzaj / Usuń</a>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                wynikiContainer.innerHTML = html;
+
+            } catch (error) {
+                wynikiContainer.innerHTML = '<h4 style="color: red;">Błąd pobierania danych.</h4>';
+            }
+        }
+    </script>
+</body>
+</html>
