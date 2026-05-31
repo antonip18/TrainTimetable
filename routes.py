@@ -9,7 +9,6 @@ from collections import defaultdict
 import itertools
 from flask import jsonify
 from flask import request, render_template, jsonify, redirect, flash
-from datetime import datetime
 
 def time_to_minutes(t):
     if t is None:
@@ -145,7 +144,7 @@ def register_routes(app):
     @app.route('/')
     def index():
         wszystkie_stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
-        domyslna_data = datetime.now().date().strftime('%Y-%m-%d')
+        domyslna_data = datetime.date.today().strftime('%Y-%m-%d')
         return render_template('index.html', stacje=wszystkie_stacje, domyslna_data=domyslna_data)
 
     @app.route('/szukaj', methods=['POST', 'GET'])
