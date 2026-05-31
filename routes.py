@@ -143,6 +143,34 @@ def zapisz_sklad_dla_pociagu(id_pociagu, id_typu_wagonu_list):
         ))
 
 
+def pobierz_wagony_do_listy_admin():
+    """
+    Pobiera wagony do wyświetlenia w panelu admina.
+
+    Dla każdego wagonu sprawdzamy też, czy jest w składzie pociągu (tabela sklady).
+    Wagon w użyciu nie może zostać usunięty – naruszyłoby to spójność bazy.
+    """
+    wiersze = db.session.query(Wagon, TypWagonu).\
+        join(TypWagonu, Wagon.id_typu == TypWagonu.id_typu).\
+        order_by(Wagon.id_wagonu.desc()).all()
+
+    lista = []
+    for wagon, typ in wiersze:
+        # Szukamy, czy wagon jest przypisany do jakiegoś pociągu
+        sklady = db.session.query(Sklad, Pociag).\
+            join(Pociag, Sklad.id_pociagu == Pociag.id_pociagu).\
+            filter(Sklad.id_wagonu == wagon.id_wagonu).all()
+
+        nazwy_pociagow = [pociag.nazwa for _, pociag in sklady]
+        lista.append({
+            'id_wagonu': wagon.id_wagonu,
+            'nazwa_typu': typ.nazwa,
+            'w_uzyciu': len(sklady) > 0,
+            'pociagi_opis': ', '.join(nazwy_pociagow),
+        })
+    return lista
+
+
 def format_minutes(m):
     hours = m // 60
     minutes = m % 60
@@ -736,6 +764,70 @@ def register_admin(app):
         """Wyszukiwarka tras do edycji lub usunięcia."""
         stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         return render_template('admin_trasy_lista.html', stacje=stacje)
+
+    @app.route('/admin/wagony', methods=['GET', 'POST'])
+    def admin_wagony():
+        """
+        Panel dodawania i usuwania wagonów.
+
+        Wagon (tabela wagony) = konkretny pojazd utworzony z szablonu (typy_wagonow).
+        Usunąć można tylko wagon, który nie jest w składzie żadnego pociągu.
+        """
+        if request.method == 'POST':
+            akcja = request.form.get('akcja')
+
+            # --- DODAWANIE ---
+            if akcja == 'dodaj':
+                id_typu = request.form.get('id_typu', type=int)
+                if not id_typu:
+                    flash('Wybierz typ wagonu z listy.', 'danger')
+                else:
+                    try:
+                        typ = db.session.get(TypWagonu, id_typu)
+                        if not typ:
+                            flash('Wybrany typ wagonu nie istnieje.', 'danger')
+                        else:
+                            nowy_wagon = Wagon(id_typu=id_typu)
+                            db.session.add(nowy_wagon)
+                            db.session.commit()
+                            flash(
+                                f'Utworzono wagon #{nowy_wagon.id_wagonu} (typ: {typ.nazwa}).',
+                                'success'
+                            )
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Błąd: {czytelny_komunikat_bledu(e)}', 'danger')
+
+            # --- USUWANIE ---
+            elif akcja == 'usun':
+                id_wagonu = request.form.get('id_wagonu', type=int)
+                try:
+                    wagon = db.session.get(Wagon, id_wagonu)
+                    if not wagon:
+                        flash('Nie znaleziono takiego wagonu.', 'danger')
+                    elif db.session.query(Sklad).filter_by(id_wagonu=id_wagonu).first():
+                        flash(
+                            f'Wagon #{id_wagonu} jest w składzie pociągu – nie można go usunąć.',
+                            'danger'
+                        )
+                    else:
+                        db.session.delete(wagon)
+                        db.session.commit()
+                        flash(f'Wagon #{id_wagonu} został usunięty.', 'success')
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Błąd: {czytelny_komunikat_bledu(e)}', 'danger')
+
+            return redirect('/admin/wagony')
+
+        # GET – pokaż formularz i listę wagonów
+        typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
+        wagony = pobierz_wagony_do_listy_admin()
+        return render_template(
+            'admin_wagony.html',
+            typy_wagonow=typy_wagonow,
+            wagony=wagony,
+        )
 
     @app.route('/api/infrastruktura/<int:id_stacji>')
     def api_infrastruktura(id_stacji):

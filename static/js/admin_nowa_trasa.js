@@ -217,20 +217,3 @@ window.onload = async function() {
     }
     przeliczKolejnoscWagonow();
 };
-
-window.AppConfig = {
-    stacjeOptions: `
-        <option value="">Wybierz stację...</option>
-        {% for s in stacje %}
-            <option value="{{ s.id_stacji }}">{{ s.nazwa_stacji }}</option>
-        {% endfor %}
-    `,
-    wagonyOptions: `
-        <option value="">Wybierz typ wagonu...</option>
-        {% for w in typy_wagonow %}
-            <option value="{{ w.id_typu }}">{{ w.nazwa }}</option>
-        {% endfor %}
-    `,
-    maStareDaneTam: {% if stacje_tam %} true {% else %} false {% endif %},
-    maStareDanePowrot: {% if stacje_powrot %} true {% else %} false {% endif %}
-};

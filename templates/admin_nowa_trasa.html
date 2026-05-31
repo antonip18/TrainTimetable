@@ -251,6 +251,28 @@
         </form>
     </div>
 
+    {#
+        AppConfig MUSI być w szablonie HTML, nie w pliku static/js/.
+        Flask (Jinja) generuje listy stacji i wagonów tylko w plikach .html.
+    #}
+    <script>
+        window.AppConfig = {
+            stacjeOptions: `
+                <option value="">Wybierz stację...</option>
+                {% for s in stacje %}
+                    <option value="{{ s.id_stacji }}">{{ s.nazwa_stacji }}</option>
+                {% endfor %}
+            `,
+            wagonyOptions: `
+                <option value="">Wybierz typ wagonu...</option>
+                {% for w in typy_wagonow %}
+                    <option value="{{ w.id_typu }}">{{ w.nazwa }}</option>
+                {% endfor %}
+            `,
+            maStareDaneTam: {% if request.form.getlist('id_stacji_tam[]') %}true{% else %}false{% endif %},
+            maStareDanePowrot: {% if request.form.getlist('id_stacji_powrot[]') %}true{% else %}false{% endif %}
+        };
+    </script>
     <script src="{{ url_for('static', filename='js/admin_nowa_trasa.js') }}"></script>
     </body>
 </html>

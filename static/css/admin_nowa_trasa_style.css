@@ -227,3 +227,42 @@ table.compact th {
     padding: 8px;
     font-size: 13px;
 }
+
+/* --- strona /admin/wagony --- */
+
+.hint {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: -8px;
+    margin-bottom: 16px;
+}
+
+.form-rzad {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.form-rzad > div {
+    flex: 1;
+    min-width: 220px;
+}
+
+.badge-wolny {
+    background: #dcfce7;
+    color: #166534;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-zajety {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zarządzanie Wagonami</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_nowa_trasa_style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <a href="/admin" class="btn btn-secondary" style="margin-bottom: 20px;">&larr; Wróć do panelu</a>
+        <h2>Zarządzanie Wagonami</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div style="padding: 15px; border-radius: 8px; background-color: {% if category == 'success' %}#dff0d8{% else %}#f2dede{% endif %}; color: {% if category == 'success' %}#3c763d{% else %}#a94442{% endif %};">
+                    <strong>{% if category == 'success' %}Sukces!{% else %}Uwaga!{% endif %}</strong> {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Sekcja dodawania -->
+        <div class="sekcja sekcja-zielona" id="dodaj">
+            <h3>1. Dodaj nowy wagon</h3>
+            <p class="hint">
+                <strong>Typ wagonu</strong> to szablon z układem miejsc (np. „Bezprzedziałowy 2 kl.”).
+                <strong>Wagon</strong> to konkretny pojazd w bazie – tworzysz go wybierając typ.
+            </p>
+
+            <form action="/admin/wagony" method="POST" class="form-rzad">
+                <input type="hidden" name="akcja" value="dodaj">
+                <div>
+                    <label>Typ wagonu:</label>
+                    <select name="id_typu" required>
+                        <option value="">-- Wybierz typ --</option>
+                        {% for typ in typy_wagonow %}
+                            <option value="{{ typ.id_typu }}">
+                                {{ typ.nazwa }}
+                                {% if typ.czy_przedzialowy %}(przedziałowy){% else %}(bezprzedziałowy){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn">+ Utwórz wagon</button>
+            </form>
+        </div>
+
+        <!-- Sekcja listy i usuwania -->
+        <div class="sekcja" id="lista">
+            <h3>2. Lista wagonów</h3>
+            <p class="hint">Usunąć można tylko wagony <strong>wolne</strong> (nie przypisane do pociągu).</p>
+
+            {% if wagony %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Typ wagonu</th>
+                        <th>Status</th>
+                        <th style="width: 110px;">Akcja</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in wagony %}
+                    <tr>
+                        <td><strong>#{{ w.id_wagonu }}</strong></td>
+                        <td>{{ w.nazwa_typu }}</td>
+                        <td>
+                            {% if w.w_uzyciu %}
+                                <span class="badge-zajety">W składzie pociągu</span>
+                                <br><small class="hint">{{ w.pociagi_opis }}</small>
+                            {% else %}
+                                <span class="badge-wolny">Wolny</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if w.w_uzyciu %}
+                                <button class="btn btn-danger" disabled title="Wagon jest w użyciu">Usuń</button>
+                            {% else %}
+                                <form action="/admin/wagony" method="POST"
+                                      onsubmit="return confirm('Usunąć wagon #{{ w.id_wagonu }}?');"
+                                      style="margin:0;">
+                                    <input type="hidden" name="akcja" value="usun">
+                                    <input type="hidden" name="id_wagonu" value="{{ w.id_wagonu }}">
+                                    <button type="submit" class="btn btn-danger">Usuń</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p class="hint" style="text-align:center; padding: 20px;">Brak wagonów. Dodaj pierwszy wagon powyżej.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
