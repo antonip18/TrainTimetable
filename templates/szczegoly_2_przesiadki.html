@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Szczegóły połączenia z dwoma przesiadkami</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/trasa_style.css') }}">
 </head>
 <body>
     <div class="details-container">
@@ -23,7 +23,7 @@
             </thead>
             <tbody>
                 {% for stop in h1 %}
-                <tr class="station-row" data-stacja="{{ stop.stacja }}">
+                <tr class="station-row" data-stacja="{{ stop.stacja }}" data-gmina="{{ stop.gmina }}" data-powiat="{{ stop.powiat }}" data-wojewodztwo="{{ stop.wojewodztwo }}">
                     <td class="station-name">{{ stop.stacja }}</td>
                     <td>{{ stop.przyjazd }}</td>
                     <td>{{ stop.odjazd }}</td>
@@ -51,7 +51,7 @@
             </thead>
             <tbody>
                 {% for stop in h2 %}
-                <tr class="station-row" data-stacja="{{ stop.stacja }}">
+                <tr class="station-row" data-stacja="{{ stop.stacja }}" data-gmina="{{ stop.gmina }}" data-powiat="{{ stop.powiat }}" data-wojewodztwo="{{ stop.wojewodztwo }}">
                     <td class="station-name">{{ stop.stacja }}</td>
                     <td>{{ stop.przyjazd }}</td>
                     <td>{{ stop.odjazd }}</td>
@@ -79,7 +79,7 @@
             </thead>
             <tbody>
                 {% for stop in h3 %}
-                <tr class="station-row" data-stacja="{{ stop.stacja }}">
+                <tr class="station-row" data-stacja="{{ stop.stacja }}" data-gmina="{{ stop.gmina }}" data-powiat="{{ stop.powiat }}" data-wojewodztwo="{{ stop.wojewodztwo }}">
                     <td class="station-name">{{ stop.stacja }}</td>
                     <td>{{ stop.przyjazd }}</td>
                     <td>{{ stop.odjazd }}</td>
@@ -138,6 +138,6 @@
         <a href="javascript:history.back()" class="back-btn">← Wróć do wyników</a>
     </div>
 
-    <script src="{{ url_for('static', filename='js/train_transfer2.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/trasa_dwie_przesiadki.js') }}"></script>
 </body>
 </html>
