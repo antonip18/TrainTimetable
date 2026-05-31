@@ -108,7 +108,7 @@ class Miejsce(db.Model):
 class Wagon(db.Model):
     """Konkretna instancja wagonu (powstaje z szablonu TypWagonu)."""
     __tablename__ = 'wagony'
-    id_wagonu = db.Column(db.Integer, primary_key=True)
+    id_wagonu = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_typu = db.Column(db.Integer, db.ForeignKey('typy_wagonow.id_typu'), nullable=False)
 
     sklady = db.relationship('Sklad', backref='wagon', lazy=True)
@@ -119,7 +119,7 @@ class Wagon(db.Model):
 class Pociag(db.Model):
     """Pociąg (np. IC 1234) – może obsługiwać wiele tras w różnych datach."""
     __tablename__ = 'pociagi'
-    id_pociagu = db.Column(db.Integer, primary_key=True)
+    id_pociagu = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nazwa = db.Column(db.String(30), unique=True, nullable=False)
     kategoria = db.Column(db.String(10), nullable=False)
 
@@ -138,7 +138,8 @@ class Sklad(db.Model):
 class Trasa(db.Model):
     """Definicja trasy – lista postojów w określonej kolejności."""
     __tablename__ = 'trasy'
-    id_trasy = db.Column(db.Integer, primary_key=True)
+    # autoincrement=True: ID nadaje trigger w bazie (seq_trasy), gdy aplikacja nie poda wartości
+    id_trasy = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nazwa_trasy = db.Column(db.String(100), nullable=False)
 
     postoje = db.relationship('Postoj', backref='trasa', lazy=True)

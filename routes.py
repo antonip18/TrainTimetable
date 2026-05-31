@@ -35,6 +35,114 @@ def parse_time_string(czas_str):
         return None
 
 
+def przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd):
+    """
+    Dopasowuje godziny do reguł bazy danych (trigger trg_waliduj_postoj):
+    - pierwsza stacja: tylko odjazd (bez przyjazdu)
+    - ostatnia stacja: tylko przyjazd (bez odjazdu)
+    """
+    przyjazd = list(godz_przyjazd)
+    odjazd = list(godz_odjazd)
+    if przyjazd:
+        przyjazd[0] = ''
+    if odjazd:
+        odjazd[-1] = ''
+    return przyjazd, odjazd
+
+
+def dopasuj_listy_postojow(infra_ids, godz_przyjazd, godz_odjazd):
+    """
+    Formularz HTML może wysłać krótsze listy godzin niż listę postojów.
+    Uzupełniamy brakujące wartości pustym stringiem, żeby zip() działał poprawnie.
+    """
+    n = len(infra_ids)
+    przyjazd = list(godz_przyjazd) + [''] * (n - len(godz_przyjazd))
+    odjazd = list(godz_odjazd) + [''] * (n - len(godz_odjazd))
+    return przyjazd[:n], odjazd[:n]
+
+
+def waliduj_dane_nowej_trasy():
+    """Sprawdza kompletność formularza admina przed zapisem do bazy."""
+    bledy = []
+
+    if not request.form.get('nazwa_trasy_tam') or not request.form.get('nazwa_trasy_powrot'):
+        bledy.append('Podaj nazwy tras w obu kierunkach.')
+    if not request.form.get('nazwa_pociagu'):
+        bledy.append('Podaj nazwę pociągu.')
+    if not request.form.get('kategoria_pociagu'):
+        bledy.append('Wybierz kategorię pociągu.')
+
+    wagony = [w for w in request.form.getlist('id_typu_wagonu[]') if w]
+    if not wagony:
+        bledy.append('Dodaj co najmniej jeden wagon do składu.')
+
+    for kierunek, etykieta in [('tam', 'TAM'), ('powrot', 'POWRÓT')]:
+        infra = request.form.getlist(f'id_infra_{kierunek}[]')
+        if len(infra) < 2:
+            bledy.append(f'Kierunek {etykieta}: dodaj co najmniej 2 stacje (start i koniec).')
+        for i, inf in enumerate(infra):
+            if not inf:
+                bledy.append(f'Kierunek {etykieta}: wybierz peron/tor dla postoju nr {i + 1}.')
+
+        typ = request.form.get(f'typ_kursowania_{kierunek}')
+        if typ == 'cykliczna':
+            if not request.form.getlist(f'dni_{kierunek}[]'):
+                bledy.append(f'Kierunek {etykieta}: zaznacz co najmniej jeden dzień tygodnia.')
+        elif typ == 'daty':
+            daty = [d for d in request.form.getlist(f'konkretne_daty_{kierunek}[]') if d]
+            if not daty:
+                bledy.append(f'Kierunek {etykieta}: dodaj co najmniej jedną datę kursowania.')
+
+    return bledy
+
+
+def czytelny_komunikat_bledu(wyjatek):
+    """Wyciąga prosty komunikat z błędu PostgreSQL (łatwiejszy do zrozumienia)."""
+    import re
+    msg = str(wyjatek)
+    dopasowanie = re.search(r'BŁĄD:\s*(.+?)(?:\n|CONTEXT:)', msg)
+    if dopasowanie:
+        return dopasowanie.group(1).strip()
+    if 'unique' in msg.lower() or 'UNIQUE' in msg:
+        return 'Pociąg o takiej nazwie już istnieje w bazie – wybierz inny numer.'
+    return msg.split('\n')[0][:200]
+
+
+def zapisz_postoje_dla_trasy(id_trasy, kierunek):
+    """Zapisuje listę postojów dla jednej trasy (kierunek tam lub powrót)."""
+    id_infra = request.form.getlist(f'id_infra_{kierunek}[]')
+    godz_przyjazd, godz_odjazd = dopasuj_listy_postojow(
+        id_infra,
+        request.form.getlist(f'godz_przyjazd_{kierunek}[]'),
+        request.form.getlist(f'godz_odjazd_{kierunek}[]'),
+    )
+    godz_przyjazd, godz_odjazd = przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd)
+
+    for idx, (infra_id, g_prz, g_odj) in enumerate(zip(id_infra, godz_przyjazd, godz_odjazd)):
+        db.session.add(Postoj(
+            id_trasy=id_trasy,
+            numer_postoju=idx + 1,
+            id_peronu_toru=int(infra_id),
+            godzina_przyjazdu=parse_time_string(g_prz),
+            godzina_odjazdu=parse_time_string(g_odj),
+        ))
+
+
+def zapisz_sklad_dla_pociagu(id_pociagu, id_typu_wagonu_list):
+    """Tworzy wagony i przypisuje je do pociągu (osobny wagon na każdy wpis w składzie)."""
+    for idx, id_typu in enumerate(id_typu_wagonu_list):
+        if not id_typu:
+            continue
+        nowy_wagon = Wagon(id_typu=int(id_typu))
+        db.session.add(nowy_wagon)
+        db.session.flush()
+        db.session.add(Sklad(
+            id_pociagu=id_pociagu,
+            id_wagonu=nowy_wagon.id_wagonu,
+            numer_kolejnosci=idx + 1,
+        ))
+
+
 def format_minutes(m):
     hours = m // 60
     minutes = m % 60
@@ -558,74 +666,53 @@ def register_admin(app):
                         db.session.add(przejazd)
 
         if request.method == 'POST':
+            # --- Krok 1: walidacja danych z formularza ---
+            bledy_walidacji = waliduj_dane_nowej_trasy()
+            if bledy_walidacji:
+                for blad in bledy_walidacji:
+                    flash(blad, 'danger')
+                stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
+                typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
+                return render_template('admin_nowa_trasa.html', stacje=stacje, typy_wagonow=typy_wagonow)
+
             try:
+                # --- Krok 2: odczyt podstawowych pól ---
                 nazwa_wspolna = request.form.get('nazwa_pociagu')
                 num_tam = request.form.get('numer_pociagu_tam')
                 num_powrot = request.form.get('numer_pociagu_powrot')
                 kategoria_pociagu = request.form.get('kategoria_pociagu')
+                id_typu_wagonu_list = request.form.getlist('id_typu_wagonu[]')
 
+                # --- Krok 3: pociągi (tam i powrót to dwa osobne rekordy) ---
                 pociag_tam = Pociag(nazwa=f"{nazwa_wspolna} {num_tam}", kategoria=kategoria_pociagu)
                 pociag_powrot = Pociag(nazwa=f"{nazwa_wspolna} {num_powrot}", kategoria=kategoria_pociagu)
-                
                 db.session.add(pociag_tam)
                 db.session.add(pociag_powrot)
-                db.session.flush()
+                db.session.flush()  # pobieramy id nadane przez trigger w bazie
 
-                id_typu_wagonu_list = request.form.getlist('id_typu_wagonu[]')
-                for idx, id_typu in enumerate(id_typu_wagonu_list):
-                    if id_typu:
-                        nowy_wagon = Wagon(id_typu=int(id_typu))
-                        db.session.add(nowy_wagon)
-                        db.session.flush()
+                # --- Krok 4: skład wagonów (osobne wagony dla każdego pociągu) ---
+                zapisz_sklad_dla_pociagu(pociag_tam.id_pociagu, id_typu_wagonu_list)
+                zapisz_sklad_dla_pociagu(pociag_powrot.id_pociagu, id_typu_wagonu_list)
 
-                        sklad_tam = Sklad(id_pociagu=pociag_tam.id_pociagu, id_wagonu=nowy_wagon.id_wagonu, numer_kolejnosci=idx + 1)
-                        sklad_powrot = Sklad(id_pociagu=pociag_powrot.id_pociagu, id_wagonu=nowy_wagon.id_wagonu, numer_kolejnosci=idx + 1)
-                        db.session.add(sklad_tam)
-                        db.session.add(sklad_powrot)
-
-                nazwa_trasy_tam = request.form.get('nazwa_trasy_tam')
-                nowa_trasa_tam = Trasa(nazwa_trasy=nazwa_trasy_tam)
+                # --- Krok 5: trasa TAM + postoje + harmonogram ---
+                nowa_trasa_tam = Trasa(nazwa_trasy=request.form.get('nazwa_trasy_tam'))
                 db.session.add(nowa_trasa_tam)
                 db.session.flush()
+                zapisz_postoje_dla_trasy(nowa_trasa_tam.id_trasy, 'tam')
+                zapisz_harmonogram_kierunkowy(
+                    nowa_trasa_tam.id_trasy, pociag_tam.id_pociagu,
+                    request.form.get('typ_kursowania_tam'), 'tam'
+                )
 
-                id_infra_tam = request.form.getlist('id_infra_tam[]')
-                godz_przyjazd_tam = request.form.getlist('godz_przyjazd_tam[]')
-                godz_odjazd_tam = request.form.getlist('godz_odjazd_tam[]')
-
-                for idx, (infra_id, g_prz, g_odj) in enumerate(zip(id_infra_tam, godz_przyjazd_tam, godz_odjazd_tam)):
-                    postoj = Postoj(
-                        id_trasy=nowa_trasa_tam.id_trasy,
-                        numer_postoju=idx + 1,
-                        id_peronu_toru=int(infra_id),
-                        godzina_przyjazdu=parse_time_string(g_prz),
-                        godzina_odjazdu=parse_time_string(g_odj)
-                    )
-                    db.session.add(postoj)
-
-                typ_kursowania_tam = request.form.get('typ_kursowania_tam')
-                zapisz_harmonogram_kierunkowy(nowa_trasa_tam.id_trasy, pociag_tam.id_pociagu, typ_kursowania_tam, 'tam')
-
-                nazwa_trasy_powrot = request.form.get('nazwa_trasy_powrot')
-                nowa_trasa_powrot = Trasa(nazwa_trasy=nazwa_trasy_powrot)
+                # --- Krok 6: trasa POWRÓT + postoje + harmonogram ---
+                nowa_trasa_powrot = Trasa(nazwa_trasy=request.form.get('nazwa_trasy_powrot'))
                 db.session.add(nowa_trasa_powrot)
                 db.session.flush()
-
-                id_infra_powrot = request.form.getlist('id_infra_powrot[]')
-                godz_przyjazd_powrot = request.form.getlist('godz_przyjazd_powrot[]')
-                godz_odjazd_powrot = request.form.getlist('godz_odjazd_powrot[]')
-
-                for idx, (infra_id, g_prz, g_odj) in enumerate(zip(id_infra_powrot, godz_przyjazd_powrot, godz_odjazd_powrot)):
-                    postoj_p = Postoj(
-                        id_trasy=nowa_trasa_powrot.id_trasy,
-                        numer_postoju=idx + 1,
-                        id_peronu_toru=int(infra_id),
-                        godzina_przyjazdu=parse_time_string(g_prz),
-                        godzina_odjazdu=parse_time_string(g_odj)
-                    )
-                    db.session.add(postoj_p)
-
-                typ_kursowania_powrot = request.form.get('typ_kursowania_powrot')
-                zapisz_harmonogram_kierunkowy(nowa_trasa_powrot.id_trasy, pociag_powrot.id_pociagu, typ_kursowania_powrot, 'powrot')
+                zapisz_postoje_dla_trasy(nowa_trasa_powrot.id_trasy, 'powrot')
+                zapisz_harmonogram_kierunkowy(
+                    nowa_trasa_powrot.id_trasy, pociag_powrot.id_pociagu,
+                    request.form.get('typ_kursowania_powrot'), 'powrot'
+                )
 
                 db.session.commit()
                 flash("Obustronne trasy, pociągi oraz wspólny skład zostały pomyślnie zapisane!", "success")
@@ -633,7 +720,7 @@ def register_admin(app):
 
             except Exception as e:
                 db.session.rollback()
-                flash(f"Błąd bazy danych (transakcja wycofana): {str(e)}", "danger")
+                flash(f"Błąd zapisu: {czytelny_komunikat_bledu(e)}", "danger")
                 
                 stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
                 typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
