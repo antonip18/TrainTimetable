@@ -1,0 +1,15 @@
+.venv
+.venv/*
+venv/
+ENV/
+env/
+.vscode/
+.idea/
+*.suo
+*.ntvs
+*.log
+*.db
+*.sqlite3
+.env
+.env.local
+__pycache__/
