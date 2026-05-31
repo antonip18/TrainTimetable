@@ -13,4 +13,3 @@ env/
 .env
 .env.local
 __pycache__/
-baza_danych/triggers.sql

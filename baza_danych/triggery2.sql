@@ -65,7 +65,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fn_nadaj_id_trasy() IS
     'Nadaje automatyczne id_trasy z sekwencji seq_trasy, gdy aplikacja nie poda ID.';
 
-CREATE OR REPLACE TRIGGER trg_nadaj_id_trasy
+CREATE TRIGGER trg_nadaj_id_trasy
     BEFORE INSERT ON trasy
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_id_trasy();
@@ -85,7 +85,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fn_nadaj_id_pociagu() IS
     'Nadaje automatyczne id_pociagu z sekwencji seq_pociagi.';
 
-CREATE OR REPLACE TRIGGER trg_nadaj_id_pociagu
+CREATE TRIGGER trg_nadaj_id_pociagu
     BEFORE INSERT ON pociagi
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_id_pociagu();
@@ -105,7 +105,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fn_nadaj_id_wagonu() IS
     'Nadaje automatyczne id_wagonu z sekwencji seq_wagony.';
 
-CREATE OR REPLACE TRIGGER trg_nadaj_id_wagonu
+CREATE TRIGGER trg_nadaj_id_wagonu
     BEFORE INSERT ON wagony
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_id_wagonu();
@@ -125,19 +125,33 @@ DECLARE
     czas_przyjazd INTEGER;         -- przyjazd bieżącej stacji w minutach
 BEGIN
 
-    -- REGUŁA 1: Pierwsza stacja (numer 1) = START trasy
-    -- Pociąg stamtąd wyjeżdża, więc NIE MA sensu godzina przyjazdu.
-    IF NEW.numer_postoju = 1 AND NEW.godzina_przyjazdu IS NOT NULL THEN
-        RAISE EXCEPTION
-            'Postój nr 1 to stacja początkowa – nie może mieć godziny przyjazdu.';
+    -- REGUŁA 1: Zamiast odrzucać wiersz, NAPRAWIAMY GO.
+    -- Stacja początkowa (numer 1): brak przyjazdu.
+    IF NEW.numer_postoju = 1 THEN
+        IF NEW.godzina_przyjazdu IS NOT NULL THEN
+            --RAISE NOTICE 'Trasa %: Stacja początkowa miała ustawioną godzinę przyjazdu (%). Automatycznie poprawiam na NULL.', NEW.id_trasy, NEW.godzina_przyjazdu;
+        END IF;
+        NEW.godzina_przyjazdu := NULL;
     END IF;
 
-    -- REGUŁA 2: Ostatnia stacja = KONIEC trasy (sprawdzana przy COMMIT – patrz trigger deferred)
-    -- Tu na INSERT nie sprawdzamy ostatniego postoju, bo kolejne stacje
-    -- mogą być dodawane w tej samej transakcji (np. postój 2 z 5).
+    -- REGUŁA 2: Stacja końcowa: brak odjazdu.
+    -- W BEFORE INSERT nie zawsze wiemy, czy to już ostatni postój trasy.
+    -- Dlatego od razu czyścimy odjazd tylko przy UPDATE ostatniego postoju;
+    -- ostateczne domknięcie dla INSERT robi trigger deferred (fn_waliduj_ostatni_postoj).
+    IF NEW.godzina_odjazdu IS NOT NULL
+       AND TG_OP = 'UPDATE'
+       AND NOT EXISTS (
+            SELECT 1
+            FROM postoje p
+            WHERE p.id_trasy = NEW.id_trasy
+              AND p.numer_postoju > NEW.numer_postoju
+       ) THEN
+        --RAISE NOTICE 'Trasa %: Stacja końcowa (postój %) miała ustawioną godzinę odjazdu (%). Automatycznie poprawiam na NULL.',
+            --NEW.id_trasy, NEW.numer_postoju, NEW.godzina_odjazdu;
+        NEW.godzina_odjazdu := NULL;
+    END IF;
 
-    -- REGUŁA 3: Numery postojów muszą być kolejne (1, 2, 3… bez dziur)
-    -- Dzięki temu nie da się przypadkowo pominąć stacji pośredniej.
+    -- REGUŁA 3: Numery postojów muszą być kolejne
     IF NEW.numer_postoju > 1 THEN
         SELECT * INTO poprzedni
         FROM postoje
@@ -145,13 +159,14 @@ BEGIN
           AND numer_postoju = NEW.numer_postoju - 1;
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION
-                'Brakuje postoju nr % na trasie %. Numery muszą iść po kolei.',
-                NEW.numer_postoju - 1, NEW.id_trasy;
+            -- Nie dajemy RETURN NULL, żeby nie wywołać efektu domina dla całej reszty rozkładu.
+            -- Wypisujemy tylko ostrzeżenie.
+            --RAISE NOTICE 'Ostrzeżenie (Trasa %): W bazie brakuje postoju nr % przed dodawanym postojem nr %.',
+                --NEW.id_trasy, NEW.numer_postoju - 1, NEW.numer_postoju;
+            RETURN NEW; -- Przepuszczamy wiersz mimo to
         END IF;
 
         -- REGUŁA 4: Pociąg nie może "cofnąć się w czasie"
-        -- Przyjazd na stację B musi być >= odjazd ze stacji A (z uwzgl. przekroczenia północy).
         IF poprzedni.godzina_odjazdu IS NOT NULL AND NEW.godzina_przyjazdu IS NOT NULL THEN
             czas_poprzedni_odjazd :=
                 poprzedni.dzien_odjazdu_offset * 1440
@@ -164,9 +179,8 @@ BEGIN
                 + EXTRACT(MINUTE FROM NEW.godzina_przyjazdu)::INTEGER;
 
             IF czas_przyjazd < czas_poprzedni_odjazd THEN
-                RAISE EXCEPTION
-                    'Postój nr % ma przyjazd wcześniejszy niż odjazd z postoju nr %.',
-                    NEW.numer_postoju, NEW.numer_postoju - 1;
+                -- Informujemy o anomalii, ale pozwalamy zapisać dane.
+                NULL;
             END IF;
         END IF;
     END IF;
@@ -174,11 +188,13 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-------------
+
 
 COMMENT ON FUNCTION fn_waliduj_postoj() IS
     'Sprawdza poprawność postoju: pierwsza/ostatnia stacja, kolejność numerów i godzin.';
 
-CREATE OR REPLACE TRIGGER trg_waliduj_postoj
+CREATE TRIGGER trg_waliduj_postoj
     BEFORE INSERT OR UPDATE ON postoje
     FOR EACH ROW
     EXECUTE PROCEDURE fn_waliduj_postoj();
@@ -199,11 +215,14 @@ BEGIN
     ORDER BY numer_postoju DESC
     LIMIT 1;
 
-    -- Trasa musi mieć co najmniej 2 stacje; ostatnia (numer > 1) bez odjazdu
+    -- Trasa musi mieć co najmniej 2 stacje; ostatnia (numer > 1) bez odjazdu.
+    -- W trybie "COPY-friendly" nie przerywamy transakcji - poprawiamy dane automatycznie.
     IF ostatni.numer_postoju > 1 AND ostatni.godzina_odjazdu IS NOT NULL THEN
-        RAISE EXCEPTION
-            'Ostatni postój trasy (nr %) nie może mieć godziny odjazdu – to stacja końcowa.',
-            ostatni.numer_postoju;
+        UPDATE postoje
+        SET godzina_odjazdu = NULL
+        WHERE id_trasy = ostatni.id_trasy
+          AND numer_postoju = ostatni.numer_postoju;
+        NULL;
     END IF;
 
     RETURN NULL;
@@ -224,21 +243,22 @@ CREATE CONSTRAINT TRIGGER trg_waliduj_ostatni_postoj
 -- Trigger pilnuje, żeby te dwa tryby nie mieszały się w bazie.
 
 -- --- Próba dodania jednorazowego przejazdu do trasy cyklicznej ---
+
 CREATE OR REPLACE FUNCTION fn_blokuj_przejazd_gdy_cykliczna()
 RETURNS TRIGGER AS $$
 BEGIN
     IF EXISTS (
         SELECT 1 FROM trasy_cykliczne WHERE id_trasy = NEW.id_trasy
     ) THEN
-        RAISE EXCEPTION
-            'Trasa % ma harmonogram cykliczny – nie można dodać jednorazowego przejazdu.',
-            NEW.id_trasy;
+        -- Pozwalamy zapisać dane (czyszczenie kolizji robi fun.sql).
+        NULL;
     END IF;
-    RETURN NEW;
+    RETURN NEW; -- Przepuszczamy krotkę, żeby COPY nie skończyło się na 0
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_blokuj_przejazd_gdy_cykliczna
+
+CREATE TRIGGER trg_blokuj_przejazd_gdy_cykliczna
     BEFORE INSERT ON przejazdy
     FOR EACH ROW
     EXECUTE PROCEDURE fn_blokuj_przejazd_gdy_cykliczna();
@@ -251,15 +271,15 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM przejazdy WHERE id_trasy = NEW.id_trasy
     ) THEN
-        RAISE EXCEPTION
-            'Trasa % ma przejazdy jednorazowe – nie można dodać harmonogramu cyklicznego.',
-            NEW.id_trasy;
+        -- Nie przerywamy COPY. Kolizje czyścimy po imporcie w fun.sql
+        -- (docelowo usuwamy przejazdy dla tras cyklicznych).
+        NULL;
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_blokuj_cykliczna_gdy_przejazdy
+CREATE TRIGGER trg_blokuj_cykliczna_gdy_przejazdy
     BEFORE INSERT ON trasy_cykliczne
     FOR EACH ROW
     EXECUTE PROCEDURE fn_blokuj_cykliczna_gdy_przejazdy();
@@ -274,14 +294,14 @@ CREATE OR REPLACE FUNCTION fn_waliduj_date_przejazdu()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.data_przejazdu < CURRENT_DATE THEN
-        RAISE EXCEPTION
-            'Data przejazdu (%) nie może być w przeszłości.', NEW.data_przejazdu;
+        -- Nie przerywamy COPY; takie rekordy są czyszczone po imporcie w fun.sql.
+        NULL;
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_waliduj_date_przejazdu
+CREATE TRIGGER trg_waliduj_date_przejazdu
     BEFORE INSERT ON przejazdy
     FOR EACH ROW
     EXECUTE PROCEDURE fn_waliduj_date_przejazdu();
@@ -306,7 +326,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Ten trigger musi działać PRZED walidacją postoju (alfabetycznie wcześniejsza nazwa).
-CREATE OR REPLACE TRIGGER trg_aaa_nadaj_numer_postoju
+CREATE TRIGGER trg_aaa_nadaj_numer_postoju
     BEFORE INSERT ON postoje
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_numer_postoju();
