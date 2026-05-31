@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Utwórz Trasę Dwukierunkową</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_nowa_trasa_style.css') }}">
-    </head>
+</head>
 <body>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -250,25 +250,6 @@
             <button type="submit" class="btn" style="background: #2563eb; font-size: 16px; width: 100%; padding: 15px; border-radius: 8px;">ZAPISZ KOMPLETNE POŁĄCZENIE DO BAZY</button>
         </form>
     </div>
-
-    <script>
-        window.AppConfig = {
-            stacjeOptions: `
-                <option value="">Wybierz stację...</option>
-                {% for s in stacje %}
-                    <option value="{{ s.id_stacji }}">{{ s.nazwa_stacji }}</option>
-                {% endfor %}
-            `,
-            wagonyOptions: `
-                <option value="">Wybierz typ wagonu...</option>
-                {% for w in typy_wagonow %}
-                    <option value="{{ w.id_typu }}">{{ w.nazwa }}</option>
-                {% endfor %}
-            `,
-            maStareDaneTam: {% if stacje_tam %} true {% else %} false {% endif %},
-            maStareDanePowrot: {% if stacje_powrot %} true {% else %} false {% endif %}
-        };
-    </script>
 
     <script src="{{ url_for('static', filename='js/admin_nowa_trasa.js') }}"></script>
     </body>

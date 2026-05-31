@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Panel Administratora</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .admin-menu { display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
-        .btn { padding: 10px 15px; background: #0056b3; color: white; text-decoration: none; border-radius: 5px; text-align: center; }
-        .btn:hover { background: #003d82; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_index.css') }}">
 </head>
 <body>
-    <h1>Panel Administratora</h1>
-    <div class="admin-menu">
-        <a href="/admin/trasa/nowa" class="btn">Dodaj nową trasę</a>
-        <a href="/admin/trasa/od_do" class="btn">Edytuj trasę</a>
-        <hr>
-        <a href="#" class="btn">Utwórz nowy wagon (Wkrótce)</a>
-        <a href="#" class="btn">Usuń wagon (Wkrótce)</a>
+    <div class="admin-container">
+        <h1>Panel Administratora</h1>
+        <div class="admin-menu">
+            <div class="section-title">Zarządzanie trasami</div>
+            <a href="/admin/trasa/nowa" class="btn">Dodaj nową trasę</a>
+            <a href="/admin/trasa/od_do" class="btn">Edytuj trasę</a>
+            <hr>
+            <div class="section-title">Zarządzanie wagonami</div>
+            <a href="#" class="btn disabled">Utwórz nowy wagon (wkrótce)</a>
+            <a href="#" class="btn disabled">Usuń wagon (wkrótce)</a>
+        </div>
     </div>
 </body>
 </html>
