@@ -1,0 +1,3 @@
+CREATE USER pociag WITH PASSWORD 'wagon';
+CREATE DATABASE kolei_db OWNER pociag;
+GRANT ALL PRIVILEGES ON DATABASE kolei_db TO pociag;
