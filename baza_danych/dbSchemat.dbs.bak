@@ -310,10 +310,10 @@
 	</schema>
 	<diagram_group name="Default" id="247024ab-b350-4ad1-82ec-026ac1d70973" >
 		<diagram name="Diagram" id="311a50b2-d559-43eb-aec0-bd659cac2750" confirmed="y" show_relation="columns" >
-			<entity schema="public" name="elementy_stale" color="C17B39" x="171" y="893" />
+			<entity schema="public" name="elementy_stale" color="C17B39" x="57" y="741" />
 			<entity schema="public" name="gminy" color="7E39C1" x="76" y="513" />
 			<entity schema="public" name="infrastruktura_stacji" color="7E39C1" x="323" y="190" />
-			<entity schema="public" name="miejsca" color="C17B39" x="741" y="874" />
+			<entity schema="public" name="miejsca" color="C17B39" x="684" y="779" />
 			<entity schema="public" name="pociagi" color="3986C1" x="931" y="741" />
 			<entity schema="public" name="postoje" color="3986C1" x="589" y="266" />
 			<entity schema="public" name="powiaty" color="7E39C1" x="57" y="304" />
@@ -323,7 +323,7 @@
 			<entity schema="public" name="stacje" color="7E39C1" x="323" y="399" />
 			<entity schema="public" name="trasy" color="3986C1" x="703" y="95" />
 			<entity schema="public" name="trasy_cykliczne" color="3986C1" x="456" y="76" />
-			<entity schema="public" name="typy_wagonow" color="C17B39" x="475" y="836" />
+			<entity schema="public" name="typy_wagonow" color="C17B39" x="437" y="817" />
 			<entity schema="public" name="wagony" color="C17B39" x="266" y="646" />
 			<entity schema="public" name="wojewodztwa" color="7E39C1" x="76" y="57" />
 		</diagram>
