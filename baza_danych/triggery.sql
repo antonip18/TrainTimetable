@@ -65,7 +65,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fn_nadaj_id_trasy() IS
     'Nadaje automatyczne id_trasy z sekwencji seq_trasy, gdy aplikacja nie poda ID.';
 
-CREATE OR REPLACE TRIGGER trg_nadaj_id_trasy
+CREATE TRIGGER trg_nadaj_id_trasy
     BEFORE INSERT ON trasy
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_id_trasy();
@@ -85,7 +85,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fn_nadaj_id_pociagu() IS
     'Nadaje automatyczne id_pociagu z sekwencji seq_pociagi.';
 
-CREATE OR REPLACE TRIGGER trg_nadaj_id_pociagu
+CREATE TRIGGER trg_nadaj_id_pociagu
     BEFORE INSERT ON pociagi
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_id_pociagu();
@@ -105,7 +105,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fn_nadaj_id_wagonu() IS
     'Nadaje automatyczne id_wagonu z sekwencji seq_wagony.';
 
-CREATE OR REPLACE TRIGGER trg_nadaj_id_wagonu
+CREATE TRIGGER trg_nadaj_id_wagonu
     BEFORE INSERT ON wagony
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_id_wagonu();
@@ -216,9 +216,9 @@ BEGIN
             czas_teoretyczny := (dystans / predkosc) * 60.0;
             czas_rzeczywisty := czas_przyjazd - czas_poprzedni_odjazd;
 
-            min_czas := GREATEST(3.0, 0.8 * czas_teoretyczny);
+            min_czas := GREATEST(1.0, 0.4 * czas_teoretyczny);
             
-            max_czas := GREATEST(czas_teoretyczny + 30.0, 3.0 * czas_teoretyczny);
+            max_czas := GREATEST(czas_teoretyczny + 90.0, 8.5 * czas_teoretyczny);
 
             IF czas_rzeczywisty < min_czas OR czas_rzeczywisty > max_czas THEN
                 RAISE EXCEPTION 
@@ -238,7 +238,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fn_waliduj_postoj() IS
     'Sprawdza poprawność postoju: pierwsza/ostatnia stacja, kolejność numerów i godzin.';
 
-CREATE OR REPLACE TRIGGER trg_waliduj_postoj
+CREATE TRIGGER trg_waliduj_postoj
     BEFORE INSERT OR UPDATE ON postoje
     FOR EACH ROW
     EXECUTE PROCEDURE fn_waliduj_postoj();
@@ -298,7 +298,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_blokuj_przejazd_gdy_cykliczna
+CREATE TRIGGER trg_blokuj_przejazd_gdy_cykliczna
     BEFORE INSERT ON przejazdy
     FOR EACH ROW
     EXECUTE PROCEDURE fn_blokuj_przejazd_gdy_cykliczna();
@@ -319,7 +319,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_blokuj_cykliczna_gdy_przejazdy
+CREATE TRIGGER trg_blokuj_cykliczna_gdy_przejazdy
     BEFORE INSERT ON trasy_cykliczne
     FOR EACH ROW
     EXECUTE PROCEDURE fn_blokuj_cykliczna_gdy_przejazdy();
@@ -330,21 +330,21 @@ CREATE OR REPLACE TRIGGER trg_blokuj_cykliczna_gdy_przejazdy
 -- =============================================================================
 -- Przy dodawaniu nowego kursu jednorazowego data musi być dzisiaj lub później.
 
-CREATE OR REPLACE FUNCTION fn_waliduj_date_przejazdu()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.data_przejazdu < CURRENT_DATE THEN
-        RAISE EXCEPTION
-            'Data przejazdu (%) nie może być w przeszłości.', NEW.data_przejazdu;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+--CREATE OR REPLACE FUNCTION fn_waliduj_date_przejazdu()
+--RETURNS TRIGGER AS $$
+--BEGIN
+--    IF NEW.data_przejazdu < CURRENT_DATE THEN
+--        RAISE EXCEPTION
+--            'Data przejazdu (%) nie może być w przeszłości.', NEW.data_przejazdu;
+--    END IF;
+--    RETURN NEW;
+--END;
+--$$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_waliduj_date_przejazdu
-    BEFORE INSERT ON przejazdy
-    FOR EACH ROW
-    EXECUTE PROCEDURE fn_waliduj_date_przejazdu();
+--CREATE TRIGGER trg_waliduj_date_przejazdu
+--    BEFORE INSERT ON przejazdy
+--    FOR EACH ROW
+--    EXECUTE PROCEDURE fn_waliduj_date_przejazdu();
 
 
 -- =============================================================================
@@ -366,7 +366,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Ten trigger musi działać PRZED walidacją postoju (alfabetycznie wcześniejsza nazwa).
-CREATE OR REPLACE TRIGGER trg_aaa_nadaj_numer_postoju
+CREATE TRIGGER trg_aaa_nadaj_numer_postoju
     BEFORE INSERT ON postoje
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_numer_postoju();

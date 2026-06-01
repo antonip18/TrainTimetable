@@ -1,6 +1,4 @@
--- UWAGA: przed usunięciem tabel uruchom (opcjonalnie):
---   psql -U pociag -d kolei_db -f baza_danych/usun_triggery.sql
-
+drop table sklady_segmenty cascade;
 drop table postoje cascade;
 drop table TRASY_CYKLICZNE cascade;
 drop type DNI_TYGODNIA cascade;

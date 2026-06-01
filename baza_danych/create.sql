@@ -86,7 +86,8 @@ CREATE TABLE SKLADY (
 
 CREATE TABLE TRASY (
     id_trasy INTEGER PRIMARY KEY,
-    nazwa_trasy VARCHAR(100) NOT NULL
+    nazwa_trasy VARCHAR(100) NOT NULL,
+    id_pociagu INTEGER REFERENCES POCIAGI(id_pociagu)
 );
 
 CREATE TABLE PRZEJAZDY (
@@ -124,11 +125,21 @@ CREATE TABLE POSTOJE (
     CHECK(godzina_przyjazdu IS NULL OR godzina_odjazdu IS NULL OR (godzina_odjazdu >= godzina_przyjazdu AND dzien_przyjazdu_offset=dzien_odjazdu_offset) OR (dzien_odjazdu_offset=dzien_przyjazdu_offset+1))
 );
 
+CREATE TABLE SKLADY_SEGMENTY (
+    id_trasy INTEGER NOT NULL REFERENCES TRASY(id_trasy) ON DELETE CASCADE,
+    id_wagonu INTEGER NOT NULL REFERENCES WAGONY(id_wagonu),
+    od_postoju INTEGER NOT NULL DEFAULT 1 CHECK (od_postoju > 0),
+    do_postoju INTEGER CHECK (do_postoju IS NULL OR do_postoju >= od_postoju),
+    numer_kolejnosci INTEGER NOT NULL CHECK (numer_kolejnosci > 0),
+    PRIMARY KEY (id_trasy, id_wagonu, od_postoju),
+    UNIQUE (id_trasy, od_postoju, numer_kolejnosci),
+    FOREIGN KEY (id_trasy, od_postoju) REFERENCES POSTOJE(id_trasy, numer_postoju),
+    FOREIGN KEY (id_trasy, do_postoju) REFERENCES POSTOJE(id_trasy, numer_postoju)
+);
+
 CREATE INDEX idx_postoje_id_trasy ON POSTOJE(id_trasy);
+CREATE INDEX idx_sklady_segmenty_trasa ON SKLADY_SEGMENTY(id_trasy);
 CREATE INDEX idx_postoje_id_peronu_toru ON POSTOJE(id_peronu_toru);
 CREATE INDEX idx_infra_id_stacji ON INFRASTRUKTURA_STACJI(id_stacji);
 CREATE INDEX idx_przejazdy_trasa_data ON PRZEJAZDY(id_trasy, data_przejazdu);
 CREATE INDEX idx_trasy_cykl_id_dzien ON TRASY_CYKLICZNE(id_trasy, dzien_kursowania);
-
--- Po utworzeniu tabel i załadowaniu danych (inserts.sql) uruchom:
---   psql -U pociag -d kolei_db -f baza_danych/triggery.sql
