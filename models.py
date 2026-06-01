@@ -141,10 +141,13 @@ class Trasa(db.Model):
     # autoincrement=True: ID nadaje trigger w bazie (seq_trasy), gdy aplikacja nie poda wartości
     id_trasy = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nazwa_trasy = db.Column(db.String(100), nullable=False)
+    id_pociagu = db.Column(db.Integer, db.ForeignKey('pociagi.id_pociagu'), nullable=True)
 
+    pociag = db.relationship('Pociag', foreign_keys=[id_pociagu], backref='trasy_domyslne', lazy=True)
     postoje = db.relationship('Postoj', backref='trasa', lazy=True)
     przejazdy = db.relationship('Przejazd', backref='trasa', lazy=True)
     trasy_cykliczne = db.relationship('TrasaCykliczna', backref='trasa', lazy=True)
+    segmenty_skladu = db.relationship('SkladSegment', backref='trasa', lazy=True)
 
 
 class Przejazd(db.Model):
@@ -176,3 +179,15 @@ class Postoj(db.Model):
     dzien_odjazdu_offset = db.Column(db.Integer, default=0)
     godzina_przyjazdu = db.Column(db.Time, nullable=True)
     godzina_odjazdu = db.Column(db.Time, nullable=True)
+
+
+class SkladSegment(db.Model):
+    """Skład wagonów na fragmencie trasy (od/do numeru postoju)."""
+    __tablename__ = 'sklady_segmenty'
+    id_trasy = db.Column(db.Integer, db.ForeignKey('trasy.id_trasy'), primary_key=True)
+    id_wagonu = db.Column(db.Integer, db.ForeignKey('wagony.id_wagonu'), primary_key=True)
+    od_postoju = db.Column(db.Integer, primary_key=True, default=1)
+    do_postoju = db.Column(db.Integer, nullable=True)
+    numer_kolejnosci = db.Column(db.Integer, nullable=False)
+
+    wagon = db.relationship('Wagon', backref='segmenty', lazy=True)
