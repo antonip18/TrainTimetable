@@ -1,23 +1,16 @@
-/**
- * Skrypt obsługujący formularz dodawania nowej trasy w panelu admina.
- * Dynamicznie dodaje postoje, wagony i daty kursowania.
- */
-
 const dzis = new Date();
 const zaMiesiac = new Date();
 zaMiesiac.setDate(dzis.getDate() + 30);
 const minDataStr = dzis.toISOString().split('T')[0];
 const maxDataStr = zaMiesiac.toISOString().split('T')[0];
 
-/** Pokazuje/ukrywa sekcję harmonogramu (cykliczny vs konkretne daty). */
 function toggleHarmonogram(kierunek, typ) {
     document.getElementById(`dni_tygodnia_div_${kierunek}`).style.display = typ === 'cykliczna' ? 'block' : 'none';
     document.getElementById(`konkretne_daty_div_${kierunek}`).style.display = typ === 'daty' ? 'block' : 'none';
 
     if (typ === 'cykliczna') {
-        // Usuwamy ukryte pola dat – inaczej required blokuje wysłanie formularza
         document.getElementById(`daty_lista_${kierunek}`).innerHTML = '';
-    } else if (document.getElementById(`daty_lista_${kierunek}`).children.length === 0) {
+    } else {
         dodajDate(kierunek);
     }
 }
@@ -58,55 +51,34 @@ function dodajPostoj(kierunek) {
     } else {
         tbody.appendChild(row);
     }
-
-    odswiezPrzyciskiUsuwania(kierunek);
-    odswiezPolitykeGodzin(kierunek);
 }
 
-function odswiezPrzyciskiUsuwania(kierunek) {
+function przyciskiUsuwania(kierunek) {
     const wiersze = document.querySelectorAll(`#postoje_tbody_${kierunek} tr`);
     wiersze.forEach((wiersz, index) => {
         const btnUsun = wiersz.querySelector('.btn-usun-postoj');
-        if (btnUsun) {
-            if (index === 0 || index === wiersze.length - 1) {
-                btnUsun.disabled = true;
-                btnUsun.style.opacity = "0.4";
-                btnUsun.style.cursor = "not-allowed";
-            } else {
-                btnUsun.disabled = false;
-                btnUsun.style.opacity = "1";
-                btnUsun.style.cursor = "pointer";
-            }
+        if (index === 0 || index === wiersze.length - 1) {
+            btnUsun.disabled = true;
+            btnUsun.style.opacity = "0.4";
+            btnUsun.style.cursor = "not-allowed";
+        } else {
+            btnUsun.disabled = false;
+            btnUsun.style.opacity = "1";
+            btnUsun.style.cursor = "pointer";
         }
     });
 }
 
-/**
- * Pierwsza stacja: tylko odjazd. Ostatnia: tylko przyjazd.
- * Używamy readOnly (nie disabled), żeby pola nadal trafiały do formularza POST.
- */
-function odswiezPolitykeGodzin(kierunek) {
+function godziny(kierunek) {
     const wiersze = document.querySelectorAll(`#postoje_tbody_${kierunek} tr`);
     wiersze.forEach((wiersz, index) => {
         const inpPrzyjazd = wiersz.querySelector('.inp-przyjazd');
         const inpOdjazd = wiersz.querySelector('.inp-odjazd');
-        if (!inpPrzyjazd || !inpOdjazd) return;
-
-        inpPrzyjazd.readOnly = false;
-        inpOdjazd.readOnly = false;
-        inpPrzyjazd.style.background = '';
-        inpOdjazd.style.background = '';
 
         if (index === 0) {
-            inpPrzyjazd.value = '';
-            inpPrzyjazd.readOnly = true;
-            inpPrzyjazd.style.background = '#f1f5f9';
             inpPrzyjazd.title = 'Pierwsza stacja – wpisz tylko godzinę odjazdu';
         }
-        if (index === wiersze.length - 1 && wiersze.length > 1) {
-            inpOdjazd.value = '';
-            inpOdjazd.readOnly = true;
-            inpOdjazd.style.background = '#f1f5f9';
+        if (index === wiersze.length - 1) {
             inpOdjazd.title = 'Ostatnia stacja – wpisz tylko godzinę przyjazdu';
         }
     });
@@ -114,8 +86,6 @@ function odswiezPolitykeGodzin(kierunek) {
 
 function usunPostoj(btn, kierunek) {
     btn.closest('tr').remove();
-    odswiezPrzyciskiUsuwania(kierunek);
-    odswiezPolitykeGodzin(kierunek);
 }
 
 async function pobierzInfrastrukture(selectElement, kierunek, selectedValue = null) {
@@ -165,7 +135,6 @@ function przeliczKolejnoscWagonow() {
     });
 }
 
-/** Przed wysłaniem formularza – włącz wszystkie pola (readOnly nie blokuje, ale dla pewności). */
 function przygotujFormularzDoWyslania() {
     document.querySelectorAll('input[type="time"]').forEach(inp => {
         inp.readOnly = false;
@@ -207,11 +176,13 @@ window.onload = async function() {
                     await pobierzInfrastrukture(stacjaSelect, kierunek, infraSelect.value);
                 }
             }
-            odswiezPrzyciskiUsuwania(kierunek);
-            odswiezPolitykeGodzin(kierunek);
         }
+        
+        przyciskiUsuwania(kierunek);
+        godziny(kierunek);
     }
 
+    
     if (document.getElementById('wagony_lista').children.length === 0) {
         dodajWagon();
     }

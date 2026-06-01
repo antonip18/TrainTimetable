@@ -1,5 +1,5 @@
 body {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: sans-serif;
     background-color: #f8fafc;
     color: #0f172a;
     padding: 40px 20px;
@@ -46,8 +46,8 @@ h4 {
 }
 
 .sekcja-zielona {
-    background-color: #f0fdf4 !important;
-    border-color: #bbf7d0 !important;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
 }
 
 .sekcja-zielona h3 {
@@ -227,8 +227,6 @@ table.compact th {
     padding: 8px;
     font-size: 13px;
 }
-
-/* --- strona /admin/wagony --- */
 
 .hint {
     color: #64748b;
