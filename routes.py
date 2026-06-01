@@ -98,7 +98,8 @@ def waliduj_dane_nowej_trasy():
 
     if not request.form.get('nazwa_trasy_tam') or not request.form.get('nazwa_trasy_powrot'):
         bledy.append('Podaj nazwy tras w obu kierunkach.')
-    if not request.form.get('nazwa_pociagu'):
+    nazwa_wspolna = (request.form.get('nazwa_pociagu') or '').strip()
+    if not nazwa_wspolna:
         bledy.append('Podaj nazwę pociągu.')
     if not request.form.get('kategoria_pociagu'):
         bledy.append('Wybierz kategorię pociągu.')
@@ -107,10 +108,6 @@ def waliduj_dane_nowej_trasy():
     if not wagony:
         bledy.append('Dodaj co najmniej jeden wagon do składu.')
 
-    for kierunek, etykieta in [('tam', 'powrot'), ('TAM', 'POWRÓT')]: # Poprawka mapowania
-        # Uwaga: w walidacji uzywalismy ('tam', 'TAM'), poprawione aby nie zgubic klucza
-        pass 
-        
     for kierunek, etykieta in [('tam', 'TAM'), ('powrot', 'POWRÓT')]:
         infra = request.form.getlist(f'id_infra_{kierunek}[]')
         if len(infra) < 2:
@@ -128,6 +125,26 @@ def waliduj_dane_nowej_trasy():
             if not daty:
                 bledy.append(f'Kierunek {etykieta}: dodaj co najmniej jedną datę kursowania.')
 
+    # Jawna walidacja unikalności nazw pociągów jeszcze przed próbą INSERT.
+    num_tam = (request.form.get('numer_pociagu_tam') or '').strip()
+    num_powrot = (request.form.get('numer_pociagu_powrot') or '').strip()
+    kandydaci = []
+    if nazwa_wspolna and num_tam:
+        kandydaci.append(f"{nazwa_wspolna} {num_tam}")
+    if nazwa_wspolna and num_powrot:
+        kandydaci.append(f"{nazwa_wspolna} {num_powrot}")
+
+    if kandydaci:
+        with db.session.no_autoflush:
+            istniejace = {
+                r[0]
+                for r in db.session.query(Pociag.nazwa).filter(Pociag.nazwa.in_(kandydaci)).all()
+            }
+        if istniejace:
+            bledy.append(
+                'Pociąg o takiej nazwie już istnieje w bazie – wybierz inny numer.'
+            )
+
     return bledy
 
 
@@ -135,12 +152,17 @@ def czytelny_komunikat_bledu(wyjatek):
     """Wyciąga prosty komunikat z błędu PostgreSQL (łatwiejszy do zrozumienia)."""
     import re
     msg = str(wyjatek)
-    dopasowanie = re.search(r'BŁĄD:\s*(.+?)(?:\n|CONTEXT:)', msg)
+    msg_db = str(getattr(wyjatek, 'orig', wyjatek))
+    zrodlo = msg_db if msg_db and msg_db != msg else msg
+
+    dopasowanie = re.search(r'BŁĄD:\s*(.+?)(?:\n|CONTEXT:)', zrodlo)
     if dopasowanie:
         return dopasowanie.group(1).strip()
-    if 'unique' in msg.lower() or 'UNIQUE' in msg:
+    if 'query-invoked autoflush' in msg.lower():
+        return msg_db.split('\n')[0][:200]
+    if 'unique' in zrodlo.lower() or 'UNIQUE' in zrodlo:
         return 'Pociąg o takiej nazwie już istnieje w bazie – wybierz inny numer.'
-    return msg.split('\n')[0][:200]
+    return zrodlo.split('\n')[0][:200]
 
 
 def zapisz_sklad_dla_pociagu(id_pociagu, id_typu_wagonu_list):
@@ -184,23 +206,31 @@ def pobierz_wagony_do_listy_admin():
         join(TypWagonu, Wagon.id_typu == TypWagonu.id_typu).\
         order_by(Wagon.id_wagonu.desc()).all()
 
+    # Pobieramy powiązania zbiorczo (bez N+1 query dla każdego wagonu).
+    sklady_rows = db.session.query(Sklad.id_wagonu, Pociag.nazwa).\
+        join(Pociag, Sklad.id_pociagu == Pociag.id_pociagu).all()
+    nazwy_pociagow_po_wagonie = {}
+    for id_wagonu, nazwa_pociagu in sklady_rows:
+        nazwy_pociagow_po_wagonie.setdefault(id_wagonu, []).append(nazwa_pociagu)
+
+    segmenty_rows = db.session.query(
+        SkladSegment.id_wagonu,
+        func.count(func.distinct(SkladSegment.id_trasy))
+    ).group_by(SkladSegment.id_wagonu).all()
+    segmenty_count_po_wagonie = {id_wagonu: liczba for id_wagonu, liczba in segmenty_rows}
+
     lista = []
     for wagon, typ in wiersze:
-        # Szukamy, czy wagon jest przypisany do jakiegoś pociągu
-        sklady = db.session.query(Sklad, Pociag).\
-            join(Pociag, Sklad.id_pociagu == Pociag.id_pociagu).\
-            filter(Sklad.id_wagonu == wagon.id_wagonu).all()
-        segmenty = db.session.query(SkladSegment.id_trasy).\
-            filter(SkladSegment.id_wagonu == wagon.id_wagonu).distinct().all()
+        nazwy_pociagow = nazwy_pociagow_po_wagonie.get(wagon.id_wagonu, [])
+        liczba_segmentow = segmenty_count_po_wagonie.get(wagon.id_wagonu, 0)
+        w_uzyciu = len(nazwy_pociagow) > 0 or liczba_segmentow > 0
 
-        nazwy_pociagow = [pociag.nazwa for _, pociag in sklady]
-        w_uzyciu = len(sklady) > 0 or len(segmenty) > 0
         lista.append({
             'id_wagonu': wagon.id_wagonu,
             'nazwa_typu': typ.nazwa,
             'w_uzyciu': w_uzyciu,
             'pociagi_opis': ', '.join(nazwy_pociagow) if nazwy_pociagow else (
-                f'w segmentach tras ({len(segmenty)})' if segmenty else ''
+                f'w segmentach tras ({liczba_segmentow})' if liczba_segmentow else ''
             ),
         })
     return lista
@@ -816,8 +846,11 @@ def register_admin(app):
                         db.session.add(przejazd)
 
         if request.method == 'POST':
+            # Czyścimy ewentualny stan transakcji z poprzednich błędnych żądań.
+            db.session.rollback()
             bledy_walidacji = waliduj_dane_nowej_trasy()
             if bledy_walidacji:
+                db.session.rollback()
                 for blad in bledy_walidacji:
                     flash(blad, 'danger')
                 stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
@@ -977,14 +1010,18 @@ def register_admin(app):
             return jsonify([])
 
         query = text("""
-            SELECT DISTINCT t.id_trasy, t.nazwa_trasy, prz.id_pociagu, poc.nazwa as nazwa_pociagu
+            SELECT DISTINCT
+                t.id_trasy,
+                t.nazwa_trasy,
+                COALESCE(prz.id_pociagu, t.id_pociagu) AS id_pociagu,
+                poc.nazwa as nazwa_pociagu
             FROM trasy t
             JOIN postoje p1 ON t.id_trasy = p1.id_trasy
             JOIN postoje p2 ON t.id_trasy = p2.id_trasy
             JOIN infrastruktura_stacji i1 ON p1.id_peronu_toru = i1.id
             JOIN infrastruktura_stacji i2 ON p2.id_peronu_toru = i2.id
             LEFT JOIN przejazdy prz ON t.id_trasy = prz.id_trasy
-            LEFT JOIN pociagi poc ON prz.id_pociagu = poc.id_pociagu
+            LEFT JOIN pociagi poc ON poc.id_pociagu = COALESCE(prz.id_pociagu, t.id_pociagu)
             WHERE i1.id_stacji = :start_id 
               AND i2.id_stacji = :end_id
               AND p1.numer_postoju < p2.numer_postoju

@@ -17293,7 +17293,7 @@ COPY wagony (id_wagonu, id_typu) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', N
 3291	17
 \.
 
-COPY sklady (id_pociagu, id_wagonu, numer_kolejnosci) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
+/* COPY sklady (id_pociagu, id_wagonu, numer_kolejnosci) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
 1	1	1
 1	2	2
 1	3	3
@@ -20586,6 +20586,7 @@ COPY sklady (id_pociagu, id_wagonu, numer_kolejnosci) FROM STDIN WITH (FORMAT cs
 551	3290	6
 551	3291	7
 \.
+*/
 
 COPY trasy (id_trasy, nazwa_trasy, id_pociagu) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
 1	Trasa: KONOPNICKA_6146_7	1
