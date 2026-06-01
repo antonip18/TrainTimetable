@@ -1,5 +1,3 @@
--- Wygenerowano przez gen_copy.py
-SET client_encoding = 'UTF8';
 BEGIN;
 
 COPY wojewodztwa (id_wojewodztwa, nazwa_wojewodztwa) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
@@ -124810,5 +124808,3 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 \.
 
 COMMIT;
-
--- Po załadowaniu uruchom: psql -U pociag -d kolei_db -f baza_danych/triggery.sql

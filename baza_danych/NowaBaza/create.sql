@@ -143,7 +143,3 @@ CREATE INDEX idx_postoje_id_peronu_toru ON POSTOJE(id_peronu_toru);
 CREATE INDEX idx_infra_id_stacji ON INFRASTRUKTURA_STACJI(id_stacji);
 CREATE INDEX idx_przejazdy_trasa_data ON PRZEJAZDY(id_trasy, data_przejazdu);
 CREATE INDEX idx_trasy_cykl_id_dzien ON TRASY_CYKLICZNE(id_trasy, dzien_kursowania);
-
--- Po utworzeniu tabel wygeneruj dane: python gen_copy.py → inserts.sql
--- Po załadowaniu danych (inserts.sql) uruchom:
---   psql -U pociag -d kolei_db -f baza_danych/triggery.sql
