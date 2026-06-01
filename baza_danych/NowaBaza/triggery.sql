@@ -218,7 +218,7 @@ BEGIN
 
             min_czas := GREATEST(1.0, 0.4 * czas_teoretyczny);
             
-            max_czas := GREATEST(czas_teoretyczny + 90.0, 7 * czas_teoretyczny);
+            max_czas := GREATEST(czas_teoretyczny + 90.0, 8.5 * czas_teoretyczny);
 
             IF czas_rzeczywisty < min_czas OR czas_rzeczywisty > max_czas THEN
                 RAISE EXCEPTION 

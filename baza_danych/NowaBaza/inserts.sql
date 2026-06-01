@@ -12558,23 +12558,23 @@ COPY elementy_stale (id_elementu, id_typu, nazwa_elementu, rzad_od, rzad_do, kol
 7	4	toaleta	1	1	1	1
 8	5	kuchnia	1	5	1	5
 9	5	bar	6	7	1	2
-10	6	rowery	12	15	1	2
-11	6	toaleta	1	1	1	2
+10	6	toaleta	1	1	1	2
+11	6	rowery	12	15	1	2
 12	7	toaleta	1	1	1	2
 13	8	toaleta_PRM	1	3	1	3
-14	8	strefa_PRM	11	12	1	3
+14	8	strefa_PRM	10	12	1	3
 15	9	toaleta	1	1	1	1
 16	9	lounge	10	10	1	4
 17	10	strefa_dzieci	1	3	1	5
 18	11	toaleta	1	1	1	2
-19	11	korytarz	1	12	3	3
+19	11	korytarz	2	11	1	1
 20	12	prysznic	1	2	1	2
-21	12	korytarz	1	10	4	4
+21	12	korytarz	3	10	1	1
 22	13	minibar	1	2	1	5
 23	13	toaleta	13	13	1	2
 24	14	toaleta	1	1	1	1
 25	15	toaleta	1	1	1	2
-26	15	wózek gastronomiczny	8	8	3	3
+26	15	bagaż	8	8	2	4
 27	16	toaleta	1	1	1	1
 28	17	toaleta	1	1	1	1
 29	17	przedział menedżerski	2	4	1	4
@@ -12593,811 +12593,856 @@ COPY elementy_stale (id_elementu, id_typu, nazwa_elementu, rzad_od, rzad_do, kol
 \.
 
 COPY miejsca (id_miejsca, id_typu, numer_miejsca, rzad, kolumna, numer_przedzialu, lokalizacja, czy_przy_stoliku, czy_dla_niepelnosprawnych, czy_dla_rowerzystow, czy_przodem) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
-1	1	1	2	1		okno	f	f	f	t
-2	1	2	2	2		środek	f	f	f	t
-3	1	3	2	4		środek	f	f	f	t
-4	1	4	2	5		okno	f	f	f	t
-5	1	5	3	1		okno	f	f	f	t
-6	1	6	3	2		środek	f	f	f	t
-7	1	7	3	4		środek	f	f	f	t
-8	1	8	3	5		okno	f	f	f	t
-9	1	9	4	1		okno	f	f	f	t
-10	1	10	4	2		środek	f	f	f	t
-11	1	11	4	4		środek	f	f	f	t
-12	1	12	4	5		okno	f	f	f	t
-13	1	13	5	1		okno	f	f	f	t
-14	1	14	5	2		środek	f	f	f	t
-15	1	15	5	4		środek	f	f	f	t
-16	1	16	5	5		okno	f	f	f	t
-17	1	17	6	1		okno	f	f	f	t
-18	1	18	6	2		środek	f	f	f	t
-19	1	19	6	4		środek	f	f	f	t
-20	1	20	6	5		okno	f	f	f	t
-21	1	21	7	1		okno	t	f	f	t
-22	1	22	7	2		środek	t	f	f	t
-23	1	23	7	4		środek	t	f	f	t
-24	1	24	7	5		okno	t	f	f	t
-25	1	25	8	1		okno	t	f	f	t
-26	1	26	8	2		środek	t	f	f	t
-27	1	27	8	4		środek	t	f	f	t
-28	1	28	8	5		okno	t	f	f	t
-29	1	29	9	1		okno	f	f	f	f
-30	1	30	9	2		środek	f	f	f	f
-31	1	31	9	4		środek	f	f	f	f
-32	1	32	9	5		okno	f	f	f	f
-33	1	33	10	1		okno	f	f	f	f
-34	1	34	10	2		środek	f	f	f	f
-35	1	35	10	4		środek	f	f	f	f
-36	1	36	10	5		okno	f	f	f	f
-37	1	37	11	1		okno	f	f	f	f
-38	1	38	11	2		środek	f	f	f	f
-39	1	39	11	4		środek	f	f	f	f
-40	1	40	11	5		okno	f	f	f	f
-41	1	41	12	1		okno	f	f	f	f
-42	1	42	12	2		środek	f	f	f	f
-43	1	43	12	4		środek	f	f	f	f
-44	1	44	12	5		okno	f	f	f	f
-45	1	45	13	1		okno	f	f	f	f
-46	1	46	13	2		środek	f	f	f	f
-47	1	47	13	4		środek	f	f	f	f
-48	1	48	13	5		okno	f	f	f	f
-49	1	49	14	1		okno	f	f	f	f
-50	1	50	14	2		środek	f	f	f	f
-51	1	51	14	4		środek	f	f	f	f
-52	1	52	14	5		okno	f	f	f	f
-53	2	1	2	1		okno	f	f	f	t
-54	2	2	2	2		korytarz	f	f	f	t
-55	2	3	2	4		okno	f	f	f	t
-56	2	4	3	1		okno	f	f	f	t
-57	2	5	3	2		korytarz	f	f	f	t
-58	2	6	3	4		okno	f	f	f	t
-59	2	7	4	1		okno	f	f	f	t
-60	2	8	4	2		korytarz	f	f	f	t
-61	2	9	4	4		okno	f	f	f	t
-62	2	10	5	1		okno	t	f	f	t
-63	2	11	5	2		korytarz	t	f	f	t
-64	2	12	5	4		okno	t	f	f	t
-65	2	13	6	1		okno	t	f	f	t
-66	2	14	6	2		korytarz	t	f	f	t
-67	2	15	6	4		okno	t	f	f	t
-68	2	16	7	1		okno	f	f	f	f
-69	2	17	7	2		korytarz	f	f	f	f
-70	2	18	7	4		okno	f	f	f	f
-71	2	19	8	1		okno	f	f	f	f
-72	2	20	8	2		korytarz	f	f	f	f
-73	2	21	8	4		okno	f	f	f	f
-74	2	22	9	1		okno	f	f	f	f
-75	2	23	9	2		korytarz	f	f	f	f
-76	2	24	9	4		okno	f	f	f	f
-77	2	25	10	1		okno	f	f	f	f
-78	2	26	10	2		korytarz	f	f	f	f
-79	2	27	10	4		okno	f	f	f	f
-80	2	28	11	1		okno	f	f	f	f
-81	2	29	11	2		korytarz	f	f	f	f
-82	2	30	11	4		okno	f	f	f	f
-83	3	11	2	2	1	korytarz	f	f	f	t
-84	3	12	2	3	1	środek	f	f	f	t
-85	3	13	3	4	1	środek	f	f	f	f
-86	3	14	3	5	1	okno	f	f	f	f
-87	3	21	4	2	2	korytarz	f	f	f	t
-88	3	22	4	3	2	środek	f	f	f	t
-89	3	23	5	4	2	środek	f	f	f	f
-90	3	24	5	5	2	okno	f	f	f	f
-91	3	31	6	2	3	korytarz	f	f	f	t
-92	3	32	6	3	3	środek	f	f	f	t
-93	3	33	7	4	3	środek	f	f	f	f
-94	3	34	7	5	3	okno	f	f	f	f
-95	3	41	8	2	4	korytarz	f	f	f	t
-96	3	42	8	3	4	środek	f	f	f	t
-97	3	43	9	4	4	środek	f	f	f	f
-98	3	44	9	5	4	okno	f	f	f	f
-99	3	51	10	2	5	korytarz	f	f	f	t
-100	3	52	10	3	5	środek	f	f	f	t
-101	3	53	11	4	5	środek	f	f	f	f
-102	3	54	11	5	5	okno	f	f	f	f
-103	3	61	12	2	6	korytarz	f	f	f	t
-104	3	62	12	3	6	środek	f	f	f	t
-105	3	63	13	4	6	środek	f	f	f	f
-106	3	64	13	5	6	okno	f	f	f	f
-107	3	71	14	2	7	korytarz	f	f	f	t
-108	3	72	14	3	7	środek	f	f	f	t
-109	3	73	15	4	7	środek	f	f	f	f
-110	3	74	15	5	7	okno	f	f	f	f
-111	3	81	16	2	8	korytarz	f	f	f	t
-112	3	82	16	3	8	środek	f	f	f	t
-113	3	83	17	4	8	środek	f	f	f	f
-114	3	84	17	5	8	okno	f	f	f	f
-115	4	11	2	2	1	korytarz	t	f	f	t
-116	4	12	2	3	1	korytarz	t	f	f	t
-117	4	13	2	4	1	okno	t	f	f	t
-118	4	21	4	2	2	korytarz	t	f	f	t
-119	4	22	4	3	2	korytarz	t	f	f	t
-120	4	23	4	4	2	okno	t	f	f	t
-121	4	31	6	2	3	korytarz	t	f	f	t
-122	4	32	6	3	3	korytarz	t	f	f	t
-123	4	33	6	4	3	okno	t	f	f	t
-124	4	41	8	2	4	korytarz	t	f	f	t
-125	4	42	8	3	4	korytarz	t	f	f	t
-126	4	43	8	4	4	okno	t	f	f	t
-127	4	51	10	2	5	korytarz	t	f	f	t
-128	4	52	10	3	5	korytarz	t	f	f	t
-129	4	53	10	4	5	okno	t	f	f	t
-130	4	61	12	2	6	korytarz	t	f	f	t
-131	4	62	12	3	6	korytarz	t	f	f	t
-132	4	63	12	4	6	okno	t	f	f	t
-133	5	51	8	1		stolik_wars	t	f	f	
-134	5	52	8	2		stolik_wars	t	f	f	
-135	5	53	8	4		stolik_wars	t	f	f	
-136	5	54	8	5		stolik_wars	t	f	f	
-137	5	55	9	1		stolik_wars	t	f	f	
-138	5	56	9	2		stolik_wars	t	f	f	
-139	5	57	9	4		stolik_wars	t	f	f	
-140	5	58	9	5		stolik_wars	t	f	f	
-141	5	59	10	1		stolik_wars	t	f	f	
-142	5	60	10	2		stolik_wars	t	f	f	
-143	5	61	10	4		stolik_wars	t	f	f	
-144	5	62	10	5		stolik_wars	t	f	f	
-145	5	63	11	1		stolik_wars	t	f	f	
-146	5	64	11	2		stolik_wars	t	f	f	
-147	5	65	11	4		stolik_wars	t	f	f	
-148	5	66	11	5		stolik_wars	t	f	f	
-149	5	67	12	1		stolik_wars	t	f	f	
-150	5	68	12	2		stolik_wars	t	f	f	
-151	5	69	12	4		stolik_wars	t	f	f	
-152	5	70	12	5		stolik_wars	t	f	f	
-153	5	71	13	1		stolik_wars	t	f	f	
-154	5	72	13	2		stolik_wars	t	f	f	
-155	5	73	13	4		stolik_wars	t	f	f	
-156	5	74	13	5		stolik_wars	t	f	f	
-157	6	1	2	1		okno	f	f	t	t
-158	6	2	2	2		środek	f	f	f	t
-159	6	3	2	4		środek	f	f	f	t
-160	6	4	2	5		okno	f	f	t	t
-161	6	5	3	1		okno	f	f	t	t
-162	6	6	3	2		środek	f	f	f	t
-163	6	7	3	4		środek	f	f	f	t
-164	6	8	3	5		okno	f	f	t	t
-165	6	9	4	1		okno	f	f	t	t
-166	6	10	4	2		środek	f	f	f	t
-167	6	11	4	4		środek	f	f	f	t
-168	6	12	4	5		okno	f	f	t	t
-169	6	13	5	1		okno	f	f	t	t
-170	6	14	5	2		środek	f	f	f	t
-171	6	15	5	4		środek	f	f	f	t
-172	6	16	5	5		okno	f	f	t	t
-173	6	17	6	1		okno	f	f	t	t
-174	6	18	6	2		środek	f	f	f	t
-175	6	19	6	4		środek	f	f	f	t
-176	6	20	6	5		okno	f	f	t	t
-177	6	21	7	1		okno	f	f	t	f
-178	6	22	7	2		środek	f	f	f	f
-179	6	23	7	4		środek	f	f	f	f
-180	6	24	7	5		okno	f	f	t	f
-181	6	25	8	1		okno	f	f	t	f
-182	6	26	8	2		środek	f	f	f	f
-183	6	27	8	4		środek	f	f	f	f
-184	6	28	8	5		okno	f	f	t	f
-185	6	29	9	1		okno	f	f	t	f
-186	6	30	9	2		środek	f	f	f	f
-187	6	31	9	4		środek	f	f	f	f
-188	6	32	9	5		okno	f	f	t	f
-189	6	33	10	1		okno	f	f	t	f
-190	6	34	10	2		środek	f	f	f	f
-191	6	35	10	4		środek	f	f	f	f
-192	6	36	10	5		okno	f	f	t	f
-193	6	37	11	1		okno	f	f	t	f
-194	6	38	11	2		środek	f	f	f	f
-195	6	39	11	4		środek	f	f	f	f
-196	6	40	11	5		okno	f	f	t	f
-197	7	1	2	1		okno	f	f	f	
-198	7	2	2	2		środek	f	f	f	
-199	7	3	2	4		środek	f	f	f	
-200	7	4	2	5		okno	f	f	f	
-201	7	5	3	1		okno	f	f	f	
-202	7	6	3	2		środek	f	f	f	
-203	7	7	3	4		środek	f	f	f	
-204	7	8	3	5		okno	f	f	f	
-205	7	9	4	1		okno	f	f	f	
-206	7	10	4	2		środek	f	f	f	
-207	7	11	4	4		środek	f	f	f	
-208	7	12	4	5		okno	f	f	f	
-209	7	13	5	1		okno	f	f	f	
-210	7	14	5	2		środek	f	f	f	
-211	7	15	5	4		środek	f	f	f	
-212	7	16	5	5		okno	f	f	f	
-213	7	17	6	1		okno	f	f	f	
-214	7	18	6	2		środek	f	f	f	
-215	7	19	6	4		środek	f	f	f	
-216	7	20	6	5		okno	f	f	f	
-217	7	21	7	1		okno	f	f	f	
-218	7	22	7	2		środek	f	f	f	
-219	7	23	7	4		środek	f	f	f	
-220	7	24	7	5		okno	f	f	f	
-221	7	25	8	1		okno	f	f	f	
-222	7	26	8	2		środek	f	f	f	
-223	7	27	8	4		środek	f	f	f	
-224	7	28	8	5		okno	f	f	f	
-225	7	29	9	1		okno	f	f	f	
-226	7	30	9	2		środek	f	f	f	
-227	7	31	9	4		środek	f	f	f	
-228	7	32	9	5		okno	f	f	f	
-229	7	33	10	1		okno	f	f	f	
-230	7	34	10	2		środek	f	f	f	
-231	7	35	10	4		środek	f	f	f	
-232	7	36	10	5		okno	f	f	f	
-233	7	37	11	1		okno	f	f	f	
-234	7	38	11	2		środek	f	f	f	
-235	7	39	11	4		środek	f	f	f	
-236	7	40	11	5		okno	f	f	f	
-237	7	41	12	1		okno	f	f	f	
-238	7	42	12	2		środek	f	f	f	
-239	7	43	12	4		środek	f	f	f	
-240	7	44	12	5		okno	f	f	f	
-241	7	45	13	1		okno	f	f	f	
-242	7	46	13	2		środek	f	f	f	
-243	7	47	13	4		środek	f	f	f	
-244	7	48	13	5		okno	f	f	f	
-245	7	49	14	1		okno	f	f	f	
-246	7	50	14	2		środek	f	f	f	
-247	7	51	14	4		środek	f	f	f	
-248	7	52	14	5		okno	f	f	f	
-249	7	53	15	1		okno	f	f	f	
-250	7	54	15	2		środek	f	f	f	
-251	7	55	15	4		środek	f	f	f	
-252	7	56	15	5		okno	f	f	f	
-253	8	1	4	1		prm	f	t	f	t
-254	8	2	4	2		prm	f	t	f	t
-255	8	3	4	4		prm	f	t	f	t
-256	8	4	4	5		prm	f	t	f	t
-257	8	5	5	1		prm	f	t	f	t
-258	8	6	5	2		prm	f	t	f	t
-259	8	7	5	4		prm	f	t	f	t
-260	8	8	5	5		prm	f	t	f	t
-261	8	9	6	1		prm	f	t	f	t
-262	8	10	6	2		prm	f	t	f	t
-263	8	11	6	4		prm	f	t	f	t
-264	8	12	6	5		prm	f	t	f	t
-265	8	13	7	1		prm	f	t	f	t
-266	8	14	7	2		prm	f	t	f	t
-267	8	15	7	4		prm	f	t	f	t
-268	8	16	7	5		prm	f	t	f	t
-269	8	17	8	1		prm	f	t	f	f
-270	8	18	8	2		prm	f	t	f	f
-271	8	19	8	4		prm	f	t	f	f
-272	8	20	8	5		prm	f	t	f	f
-273	8	21	9	1		prm	f	t	f	f
-274	8	22	9	2		prm	f	t	f	f
-275	8	23	9	4		prm	f	t	f	f
-276	8	24	9	5		prm	f	t	f	f
-277	8	25	10	1		prm	f	t	f	f
-278	8	26	10	2		prm	f	t	f	f
-279	8	27	10	4		prm	f	t	f	f
-280	8	28	10	5		prm	f	t	f	f
-281	9	11	2	2	1	vip	t	f	f	t
-282	9	12	2	4	1	vip	t	f	f	t
-283	9	21	4	2	2	vip	t	f	f	t
-284	9	22	4	4	2	vip	t	f	f	t
-285	9	31	6	2	3	vip	t	f	f	t
-286	9	32	6	4	3	vip	t	f	f	t
-287	9	41	8	2	4	vip	t	f	f	t
-288	9	42	8	4	4	vip	t	f	f	t
-289	10	1	4	1		rodzinne	t	f	f	t
-290	10	2	4	2		rodzinne	t	f	f	t
-291	10	3	4	4		rodzinne	t	f	f	t
-292	10	4	4	5		rodzinne	t	f	f	t
-293	10	5	5	1		rodzinne	t	f	f	t
-294	10	6	5	2		rodzinne	t	f	f	t
-295	10	7	5	4		rodzinne	t	f	f	t
-296	10	8	5	5		rodzinne	t	f	f	t
-297	10	9	6	1		rodzinne	t	f	f	t
-298	10	10	6	2		rodzinne	t	f	f	t
-299	10	11	6	4		rodzinne	t	f	f	t
-300	10	12	6	5		rodzinne	t	f	f	t
-301	10	13	7	1		rodzinne	t	f	f	t
-302	10	14	7	2		rodzinne	t	f	f	t
-303	10	15	7	4		rodzinne	t	f	f	t
-304	10	16	7	5		rodzinne	t	f	f	t
-305	10	17	8	1		rodzinne	t	f	f	t
-306	10	18	8	2		rodzinne	t	f	f	t
-307	10	19	8	4		rodzinne	t	f	f	t
-308	10	20	8	5		rodzinne	t	f	f	t
-309	10	21	9	1		rodzinne	t	f	f	t
-310	10	22	9	2		rodzinne	t	f	f	t
-311	10	23	9	4		rodzinne	t	f	f	t
-312	10	24	9	5		rodzinne	t	f	f	t
-313	10	25	10	1		rodzinne	t	f	f	f
-314	10	26	10	2		rodzinne	t	f	f	f
-315	10	27	10	4		rodzinne	t	f	f	f
-316	10	28	10	5		rodzinne	t	f	f	f
-317	10	29	11	1		rodzinne	t	f	f	f
-318	10	30	11	2		rodzinne	t	f	f	f
-319	10	31	11	4		rodzinne	t	f	f	f
-320	10	32	11	5		rodzinne	t	f	f	f
-321	10	33	12	1		rodzinne	t	f	f	f
-322	10	34	12	2		rodzinne	t	f	f	f
-323	10	35	12	4		rodzinne	t	f	f	f
-324	10	36	12	5		rodzinne	t	f	f	f
-325	10	37	13	1		rodzinne	t	f	f	f
-326	10	38	13	2		rodzinne	t	f	f	f
-327	10	39	13	4		rodzinne	t	f	f	f
-328	10	40	13	5		rodzinne	t	f	f	f
-329	10	41	14	1		rodzinne	t	f	f	f
-330	10	42	14	2		rodzinne	t	f	f	f
-331	10	43	14	4		rodzinne	t	f	f	f
-332	10	44	14	5		rodzinne	t	f	f	f
-333	10	45	15	1		rodzinne	t	f	f	f
-334	10	46	15	2		rodzinne	t	f	f	f
-335	10	47	15	4		rodzinne	t	f	f	f
-336	10	48	15	5		rodzinne	t	f	f	f
-337	11	11	2	1	1	kuszetka	f	f	f	
-338	11	12	2	2	1	kuszetka	f	f	f	
-339	11	13	2	4	1	kuszetka	f	f	f	
-340	11	14	2	5	1	kuszetka	f	f	f	
-341	11	21	4	1	2	kuszetka	f	f	f	
-342	11	22	4	2	2	kuszetka	f	f	f	
-343	11	23	4	4	2	kuszetka	f	f	f	
-344	11	24	4	5	2	kuszetka	f	f	f	
-345	11	31	6	1	3	kuszetka	f	f	f	
-346	11	32	6	2	3	kuszetka	f	f	f	
-347	11	33	6	4	3	kuszetka	f	f	f	
-348	11	34	6	5	3	kuszetka	f	f	f	
-349	11	41	8	1	4	kuszetka	f	f	f	
-350	11	42	8	2	4	kuszetka	f	f	f	
-351	11	43	8	4	4	kuszetka	f	f	f	
-352	11	44	8	5	4	kuszetka	f	f	f	
-353	11	51	10	1	5	kuszetka	f	f	f	
-354	11	52	10	2	5	kuszetka	f	f	f	
-355	11	53	10	4	5	kuszetka	f	f	f	
-356	11	54	10	5	5	kuszetka	f	f	f	
-357	12	11	3	2	1	sypialny	f	f	f	
-358	12	21	4	2	2	sypialny	f	f	f	
-359	12	31	5	2	3	sypialny	f	f	f	
-360	12	41	6	2	4	sypialny	f	f	f	
-361	12	51	7	2	5	sypialny	f	f	f	
-362	12	61	8	2	6	sypialny	f	f	f	
-363	12	71	9	2	7	sypialny	f	f	f	
-364	12	81	10	2	8	sypialny	f	f	f	
-365	13	1	3	1		okno	t	f	f	t
-366	13	2	3	2		środek	t	f	f	t
-367	13	3	3	4		środek	t	f	f	t
-368	13	4	3	5		okno	t	f	f	t
-369	13	5	4	1		okno	t	f	f	t
-370	13	6	4	2		środek	t	f	f	t
-371	13	7	4	4		środek	t	f	f	t
-372	13	8	4	5		okno	t	f	f	t
-373	13	9	5	1		okno	t	f	f	t
-374	13	10	5	2		środek	t	f	f	t
-375	13	11	5	4		środek	t	f	f	t
-376	13	12	5	5		okno	t	f	f	t
-377	13	13	6	1		okno	f	f	f	t
-378	13	14	6	2		środek	f	f	f	t
-379	13	15	6	4		środek	f	f	f	t
-380	13	16	6	5		okno	f	f	f	t
-381	13	17	7	1		okno	f	f	f	t
-382	13	18	7	2		środek	f	f	f	t
-383	13	19	7	4		środek	f	f	f	t
-384	13	20	7	5		okno	f	f	f	t
-385	13	21	8	1		okno	f	f	f	f
-386	13	22	8	2		środek	f	f	f	f
-387	13	23	8	4		środek	f	f	f	f
-388	13	24	8	5		okno	f	f	f	f
-389	13	25	9	1		okno	f	f	f	f
-390	13	26	9	2		środek	f	f	f	f
-391	13	27	9	4		środek	f	f	f	f
-392	13	28	9	5		okno	f	f	f	f
-393	13	29	10	1		okno	f	f	f	f
-394	13	30	10	2		środek	f	f	f	f
-395	13	31	10	4		środek	f	f	f	f
-396	13	32	10	5		okno	f	f	f	f
-397	13	33	11	1		okno	f	f	f	f
-398	13	34	11	2		środek	f	f	f	f
-399	13	35	11	4		środek	f	f	f	f
-400	13	36	11	5		okno	f	f	f	f
-401	13	37	12	1		okno	f	f	f	f
-402	13	38	12	2		środek	f	f	f	f
-403	13	39	12	4		środek	f	f	f	f
-404	13	40	12	5		okno	f	f	f	f
-405	14	11	2	1	1	kuszetka	f	f	f	
-406	14	12	2	2	1	kuszetka	f	f	f	
-407	14	13	2	4	1	kuszetka	f	f	f	
-408	14	14	3	5	1	kuszetka	f	f	f	
-409	14	13	3	4	1	kuszetka	f	f	f	
-410	14	14	3	5	1	kuszetka	f	f	f	
-411	14	21	4	1	2	kuszetka	f	f	f	
-412	14	22	4	2	2	kuszetka	f	f	f	
-413	14	23	4	4	2	kuszetka	f	f	f	
-414	14	24	5	5	2	kuszetka	f	f	f	
-415	14	23	5	4	2	kuszetka	f	f	f	
-416	14	24	5	5	2	kuszetka	f	f	f	
-417	14	31	6	1	3	kuszetka	f	f	f	
-418	14	32	6	2	3	kuszetka	f	f	f	
-419	14	33	6	4	3	kuszetka	f	f	f	
-420	14	34	7	5	3	kuszetka	f	f	f	
-421	14	33	7	4	3	kuszetka	f	f	f	
-422	14	34	7	5	3	kuszetka	f	f	f	
-423	14	41	8	1	4	kuszetka	f	f	f	
-424	14	42	8	2	4	kuszetka	f	f	f	
-425	14	43	8	4	4	kuszetka	f	f	f	
-426	14	44	9	5	4	kuszetka	f	f	f	
-427	14	43	9	4	4	kuszetka	f	f	f	
-428	14	44	9	5	4	kuszetka	f	f	f	
-429	14	51	10	1	5	kuszetka	f	f	f	
-430	14	52	10	2	5	kuszetka	f	f	f	
-431	14	53	10	4	5	kuszetka	f	f	f	
-432	14	54	11	5	5	kuszetka	f	f	f	
-433	14	53	11	4	5	kuszetka	f	f	f	
-434	14	54	11	5	5	kuszetka	f	f	f	
-435	14	61	12	1	6	kuszetka	f	f	f	
-436	14	62	12	2	6	kuszetka	f	f	f	
-437	14	63	12	4	6	kuszetka	f	f	f	
-438	14	64	13	5	6	kuszetka	f	f	f	
-439	14	63	13	4	6	kuszetka	f	f	f	
-440	14	64	13	5	6	kuszetka	f	f	f	
-441	15	1	2	1		okno	f	f	f	t
-442	15	2	2	2		środek	f	f	f	t
-443	15	3	2	4		środek	f	f	f	t
-444	15	4	2	5		okno	f	f	f	t
-445	15	5	3	1		okno	f	f	f	t
-446	15	6	3	2		środek	f	f	f	t
-447	15	7	3	4		środek	f	f	f	t
-448	15	8	3	5		okno	f	f	f	t
-449	15	9	4	1		okno	f	f	f	t
-450	15	10	4	2		środek	f	f	f	t
-451	15	11	4	4		środek	f	f	f	t
-452	15	12	4	5		okno	f	f	f	t
-453	15	13	5	1		okno	f	f	f	t
-454	15	14	5	2		środek	f	f	f	t
-455	15	15	5	4		środek	f	f	f	t
-456	15	16	5	5		okno	f	f	f	t
-457	15	17	6	1		okno	t	f	f	t
-458	15	18	6	2		środek	t	f	f	t
-459	15	19	6	4		środek	t	f	f	t
-460	15	20	6	5		okno	t	f	f	t
-461	15	21	7	1		okno	t	f	f	t
-462	15	22	7	2		środek	t	f	f	t
-463	15	23	7	4		środek	t	f	f	t
-464	15	24	7	5		okno	t	f	f	t
-465	15	25	8	1		okno	f	f	f	t
-466	15	26	8	2		środek	f	f	f	t
-467	15	27	8	4		środek	f	f	f	t
-468	15	28	8	5		okno	f	f	f	t
-469	15	29	9	1		okno	t	f	f	f
-470	15	30	9	2		środek	t	f	f	f
-471	15	31	9	4		środek	t	f	f	f
-472	15	32	9	5		okno	t	f	f	f
-473	15	33	10	1		okno	t	f	f	f
-474	15	34	10	2		środek	t	f	f	f
-475	15	35	10	4		środek	t	f	f	f
-476	15	36	10	5		okno	t	f	f	f
-477	15	37	11	1		okno	f	f	f	f
-478	15	38	11	2		środek	f	f	f	f
-479	15	39	11	4		środek	f	f	f	f
-480	15	40	11	5		okno	f	f	f	f
-481	15	41	12	1		okno	f	f	f	f
-482	15	42	12	2		środek	f	f	f	f
-483	15	43	12	4		środek	f	f	f	f
-484	15	44	12	5		okno	f	f	f	f
-485	15	45	13	1		okno	f	f	f	f
-486	15	46	13	2		środek	f	f	f	f
-487	15	47	13	4		środek	f	f	f	f
-488	15	48	13	5		okno	f	f	f	f
-489	15	49	14	1		okno	f	f	f	f
-490	15	50	14	2		środek	f	f	f	f
-491	15	51	14	4		środek	f	f	f	f
-492	15	52	14	5		okno	f	f	f	f
-493	16	11	2	1		okno	f	f	f	t
-494	16	12	2	2		środek	f	f	f	t
-495	16	13	2	3		środek	f	f	f	t
-496	16	14	2	4		okno	f	f	f	t
-497	16	15	3	1		okno	f	f	f	t
-498	16	16	3	2		środek	f	f	f	t
-499	16	17	3	3		środek	f	f	f	t
-500	16	18	3	4		okno	f	f	f	t
-501	16	19	4	1		okno	f	f	f	t
-502	16	20	4	2		środek	f	f	f	t
-503	16	21	4	3		środek	f	f	f	t
-504	16	22	4	4		okno	f	f	f	t
-505	16	23	5	1		okno	f	f	f	t
-506	16	24	5	2		środek	f	f	f	t
-507	16	25	5	3		środek	f	f	f	t
-508	16	26	5	4		okno	f	f	f	t
-509	16	27	6	1		okno	f	f	f	t
-510	16	28	6	2		środek	f	f	f	t
-511	16	29	6	3		środek	f	f	f	t
-512	16	30	6	4		okno	f	f	f	t
-513	16	31	7	1		okno	f	f	f	f
-514	16	32	7	2		środek	f	f	f	f
-515	16	33	7	3		środek	f	f	f	f
-516	16	34	7	4		okno	f	f	f	f
-517	16	35	8	1		okno	f	f	f	f
-518	16	36	8	2		środek	f	f	f	f
-519	16	37	8	3		środek	f	f	f	f
-520	16	38	8	4		okno	f	f	f	f
-521	16	39	9	1		okno	f	f	f	f
-522	16	40	9	2		środek	f	f	f	f
-523	16	41	9	3		środek	f	f	f	f
-524	16	42	9	4		okno	f	f	f	f
-525	16	43	10	1		okno	f	f	f	f
-526	16	44	10	2		środek	f	f	f	f
-527	16	45	10	3		środek	f	f	f	f
-528	16	46	10	4		okno	f	f	f	f
-529	16	47	11	1		okno	f	f	f	f
-530	16	48	11	2		środek	f	f	f	f
-531	16	49	11	3		środek	f	f	f	f
-532	16	50	11	4		okno	f	f	f	f
-533	17	1	5	1		okno	t	f	f	t
-534	17	2	5	2		korytarz	t	f	f	t
-535	17	3	5	4		okno	t	f	f	t
-536	17	4	6	1		okno	t	f	f	t
-537	17	5	6	2		korytarz	t	f	f	t
-538	17	6	6	4		okno	t	f	f	t
-539	17	7	7	1		okno	t	f	f	t
-540	17	8	7	2		korytarz	t	f	f	t
-541	17	9	7	4		okno	t	f	f	t
-542	17	10	8	1		okno	t	f	f	t
-543	17	11	8	2		korytarz	t	f	f	t
-544	17	12	8	4		okno	t	f	f	t
-545	17	13	9	1		okno	f	f	f	f
-546	17	14	9	2		korytarz	f	f	f	f
-547	17	15	9	4		okno	f	f	f	f
-548	17	16	10	1		okno	f	f	f	f
-549	17	17	10	2		korytarz	f	f	f	f
-550	17	18	10	4		okno	f	f	f	f
-551	17	19	11	1		okno	f	f	f	f
-552	17	20	11	2		korytarz	f	f	f	f
-553	17	21	11	4		okno	f	f	f	f
-554	17	22	12	1		okno	f	f	f	f
-555	17	23	12	2		korytarz	f	f	f	f
-556	17	24	12	4		okno	f	f	f	f
-557	18	1	2	1		okno	f	f	f	t
-558	18	2	2	2		środek	f	f	f	t
-559	18	3	2	4		środek	f	f	f	t
-560	18	4	2	5		okno	f	f	f	t
-561	18	5	3	1		okno	f	f	f	t
-562	18	6	3	2		środek	f	f	f	t
-563	18	7	3	4		środek	f	f	f	t
-564	18	8	3	5		okno	f	f	f	t
-565	18	9	4	1		okno	f	f	f	t
-566	18	10	4	2		środek	f	f	f	t
-567	18	11	4	4		środek	f	f	f	t
-568	18	12	4	5		okno	f	f	f	t
-569	18	13	5	1		okno	f	f	f	t
-570	18	14	5	2		środek	f	f	f	t
-571	18	15	5	4		środek	f	f	f	t
-572	18	16	5	5		okno	f	f	f	t
-573	18	17	6	1		okno	f	f	f	t
-574	18	18	6	2		środek	f	f	f	t
-575	18	19	6	4		środek	f	f	f	t
-576	18	20	6	5		okno	f	f	f	t
-577	18	21	7	1		okno	f	f	f	t
-578	18	22	7	2		środek	f	f	f	t
-579	18	23	7	4		środek	f	f	f	t
-580	18	24	7	5		okno	f	f	f	t
-581	18	25	8	1		okno	f	f	f	t
-582	18	26	8	2		środek	f	f	f	t
-583	18	27	8	4		środek	f	f	f	t
-584	18	28	8	5		okno	f	f	f	t
-585	18	29	9	1		okno	f	f	f	f
-586	18	30	9	2		środek	f	f	f	f
-587	18	31	9	4		środek	f	f	f	f
-588	18	32	9	5		okno	f	f	f	f
-589	18	33	10	1		okno	f	f	f	f
-590	18	34	10	2		środek	f	f	f	f
-591	18	35	10	4		środek	f	f	f	f
-592	18	36	10	5		okno	f	f	f	f
-593	18	37	11	1		okno	f	f	f	f
-594	18	38	11	2		środek	f	f	f	f
-595	18	39	11	4		środek	f	f	f	f
-596	18	40	11	5		okno	f	f	f	f
-597	18	41	12	1		okno	f	f	f	f
-598	18	42	12	2		środek	f	f	f	f
-599	18	43	12	4		środek	f	f	f	f
-600	18	44	12	5		okno	f	f	f	f
-601	18	45	13	1		okno	f	f	f	f
-602	18	46	13	2		środek	f	f	f	f
-603	18	47	13	4		środek	f	f	f	f
-604	18	48	13	5		okno	f	f	f	f
-605	18	49	14	1		okno	f	f	f	f
-606	18	50	14	2		środek	f	f	f	f
-607	18	51	14	4		środek	f	f	f	f
-608	18	52	14	5		okno	f	f	f	f
-609	19	11	2	2	1	korytarz	t	f	f	
-610	19	12	2	3	1	korytarz	t	f	f	
-611	19	13	2	4	1	okno	t	f	f	
-612	19	21	4	2	2	korytarz	t	f	f	
-613	19	22	4	3	2	korytarz	t	f	f	
-614	19	23	4	4	2	okno	t	f	f	
-615	19	31	6	2	3	korytarz	t	f	f	
-616	19	32	6	3	3	korytarz	t	f	f	
-617	19	33	6	4	3	okno	t	f	f	
-618	19	41	8	2	4	korytarz	t	f	f	
-619	19	42	8	3	4	korytarz	t	f	f	
-620	19	43	8	4	4	okno	t	f	f	
-621	19	51	10	2	5	korytarz	t	f	f	
-622	19	52	10	3	5	korytarz	t	f	f	
-623	19	53	10	4	5	okno	t	f	f	
-624	20	11	2	2	1	korytarz	f	f	f	
-625	20	12	2	3	1	korytarz	f	f	f	
-626	20	13	2	4	1	korytarz	f	f	f	
-627	20	14	2	5	1	okno	f	f	f	
-628	20	21	4	2	2	korytarz	f	f	f	
-629	20	22	4	3	2	korytarz	f	f	f	
-630	20	23	4	4	2	korytarz	f	f	f	
-631	20	24	4	5	2	okno	f	f	f	
-632	20	31	6	2	3	korytarz	f	f	f	
-633	20	32	6	3	3	korytarz	f	f	f	
-634	20	33	6	4	3	korytarz	f	f	f	
-635	20	34	6	5	3	okno	f	f	f	
-636	20	41	8	2	4	korytarz	f	f	f	
-637	20	42	8	3	4	korytarz	f	f	f	
-638	20	43	8	4	4	korytarz	f	f	f	
-639	20	44	8	5	4	okno	f	f	f	
-640	20	51	10	2	5	korytarz	f	f	f	
-641	20	52	10	3	5	korytarz	f	f	f	
-642	20	53	10	4	5	korytarz	f	f	f	
-643	20	54	10	5	5	okno	f	f	f	
-644	20	61	12	2	6	korytarz	f	f	f	
-645	20	62	12	3	6	korytarz	f	f	f	
-646	20	63	12	4	6	korytarz	f	f	f	
-647	20	64	12	5	6	okno	f	f	f	
-648	20	71	14	2	7	korytarz	f	f	f	
-649	20	72	14	3	7	korytarz	f	f	f	
-650	20	73	14	4	7	korytarz	f	f	f	
-651	20	74	14	5	7	okno	f	f	f	
-652	20	81	16	2	8	korytarz	f	f	f	
-653	20	82	16	3	8	korytarz	f	f	f	
-654	20	83	16	4	8	korytarz	f	f	f	
-655	20	84	16	5	8	okno	f	f	f	
-656	21	1	2	1		okno	f	f	f	t
-657	21	2	2	2		środek	f	f	f	t
-658	21	3	2	4		środek	f	f	f	t
-659	21	4	2	5		okno	f	f	f	t
-660	21	5	3	1		okno	f	f	f	t
-661	21	6	3	2		środek	f	f	f	t
-662	21	7	3	4		środek	f	f	f	t
-663	21	8	3	5		okno	f	f	f	t
-664	21	9	4	1		okno	f	f	f	t
-665	21	10	4	2		środek	f	f	f	t
-666	21	11	4	4		środek	f	f	f	t
-667	21	12	4	5		okno	f	f	f	t
-668	21	13	5	1		okno	f	f	f	t
-669	21	14	5	2		środek	f	f	f	t
-670	21	15	5	4		środek	f	f	f	t
-671	21	16	5	5		okno	f	f	f	t
-672	21	17	6	1		okno	f	f	f	t
-673	21	18	6	2		środek	f	f	f	t
-674	21	19	6	4		środek	f	f	f	t
-675	21	20	6	5		okno	f	f	f	t
-676	21	21	7	1		okno	f	f	f	t
-677	21	22	7	2		środek	f	f	f	t
-678	21	23	7	4		środek	f	f	f	t
-679	21	24	7	5		okno	f	f	f	t
-680	21	25	8	1		okno	f	f	f	t
-681	21	26	8	2		środek	f	f	f	t
-682	21	27	8	4		środek	f	f	f	t
-683	21	28	8	5		okno	f	f	f	t
-684	21	29	9	1		okno	f	f	f	t
-685	21	30	9	2		środek	f	f	f	t
-686	21	31	9	4		środek	f	f	f	t
-687	21	32	9	5		okno	f	f	f	t
-688	21	33	10	1		okno	f	f	f	f
-689	21	34	10	2		środek	f	f	f	f
-690	21	35	10	4		środek	f	f	f	f
-691	21	36	10	5		okno	f	f	f	f
-692	21	37	11	1		okno	f	f	f	f
-693	21	38	11	2		środek	f	f	f	f
-694	21	39	11	4		środek	f	f	f	f
-695	21	40	11	5		okno	f	f	f	f
-696	21	41	12	1		okno	f	f	f	f
-697	21	42	12	2		środek	f	f	f	f
-698	21	43	12	4		środek	f	f	f	f
-699	21	44	12	5		okno	f	f	f	f
-700	21	45	13	1		okno	f	f	f	f
-701	21	46	13	2		środek	f	f	f	f
-702	21	47	13	4		środek	f	f	f	f
-703	21	48	13	5		okno	f	f	f	f
-704	21	49	14	1		okno	f	f	f	f
-705	21	50	14	2		środek	f	f	f	f
-706	21	51	14	4		środek	f	f	f	f
-707	21	52	14	5		okno	f	f	f	f
-708	21	53	15	1		okno	f	f	f	f
-709	21	54	15	2		środek	f	f	f	f
-710	21	55	15	4		środek	f	f	f	f
-711	21	56	15	5		okno	f	f	f	f
-712	21	57	16	1		okno	f	f	f	f
-713	21	58	16	2		środek	f	f	f	f
-714	21	59	16	4		środek	f	f	f	f
-715	21	60	16	5		okno	f	f	f	f
-716	22	61	9	2		bar	f	f	f	
-717	22	62	9	4		bar	f	f	f	
-718	22	63	10	2		bar	f	f	f	
-719	22	64	10	4		bar	f	f	f	
-720	22	65	11	2		bar	f	f	f	
-721	22	66	11	4		bar	f	f	f	
-722	22	67	12	2		bar	f	f	f	
-723	22	68	12	4		bar	f	f	f	
-724	23	1	2	3		okno	f	f	t	t
-725	23	2	2	4		korytarz	f	f	f	t
-726	23	3	2	5		okno	f	f	f	t
-727	23	4	3	3		okno	f	f	t	t
-728	23	5	3	4		korytarz	f	f	f	t
-729	23	6	3	5		okno	f	f	f	t
-730	23	7	4	3		okno	f	f	t	t
-731	23	8	4	4		korytarz	f	f	f	t
-732	23	9	4	5		okno	f	f	f	t
-733	23	10	5	3		okno	f	f	t	t
-734	23	11	5	4		korytarz	f	f	f	t
-735	23	12	5	5		okno	f	f	f	t
-736	23	13	6	3		okno	f	f	t	f
-737	23	14	6	4		korytarz	f	f	f	f
-738	23	15	6	5		okno	f	f	f	f
-739	23	16	7	3		okno	f	f	t	f
-740	23	17	7	4		korytarz	f	f	f	f
-741	23	18	7	5		okno	f	f	f	f
-742	23	19	8	3		okno	f	f	t	f
-743	23	20	8	4		korytarz	f	f	f	f
-744	23	21	8	5		okno	f	f	f	f
-745	23	22	9	3		okno	f	f	t	f
-746	23	23	9	4		korytarz	f	f	f	f
-747	23	24	9	5		okno	f	f	f	f
-748	24	11	2	1	1	siedzący_nocny	f	f	f	
-749	24	12	2	2	1	siedzący_nocny	f	f	f	
-750	24	13	2	4	1	siedzący_nocny	f	f	f	
-751	24	14	2	5	1	siedzący_nocny	f	f	f	
-752	24	21	4	1	2	siedzący_nocny	f	f	f	
-753	24	22	4	2	2	siedzący_nocny	f	f	f	
-754	24	23	4	4	2	siedzący_nocny	f	f	f	
-755	24	24	4	5	2	siedzący_nocny	f	f	f	
-756	24	31	6	1	3	siedzący_nocny	f	f	f	
-757	24	32	6	2	3	siedzący_nocny	f	f	f	
-758	24	33	6	4	3	siedzący_nocny	f	f	f	
-759	24	34	6	5	3	siedzący_nocny	f	f	f	
-760	24	41	8	1	4	siedzący_nocny	f	f	f	
-761	24	42	8	2	4	siedzący_nocny	f	f	f	
-762	24	43	8	4	4	siedzący_nocny	f	f	f	
-763	24	44	8	5	4	siedzący_nocny	f	f	f	
-764	24	51	10	1	5	siedzący_nocny	f	f	f	
-765	24	52	10	2	5	siedzący_nocny	f	f	f	
-766	24	53	10	4	5	siedzący_nocny	f	f	f	
-767	24	54	10	5	5	siedzący_nocny	f	f	f	
-768	24	61	12	1	6	siedzący_nocny	f	f	f	
-769	24	62	12	2	6	siedzący_nocny	f	f	f	
-770	24	63	12	4	6	siedzący_nocny	f	f	f	
-771	24	64	12	5	6	siedzący_nocny	f	f	f	
-772	24	71	14	1	7	siedzący_nocny	f	f	f	
-773	24	72	14	2	7	siedzący_nocny	f	f	f	
-774	24	73	14	4	7	siedzący_nocny	f	f	f	
-775	24	74	14	5	7	siedzący_nocny	f	f	f	
-776	25	11	2	1		okno	f	f	f	t
-777	25	12	2	2		korytarz	f	f	f	t
-778	25	13	2	4		okno	f	f	f	t
-779	25	14	3	1		okno	f	f	f	t
-780	25	15	3	2		korytarz	f	f	f	t
-781	25	16	3	4		okno	f	f	f	t
-782	25	17	4	1		okno	f	f	f	t
-783	25	18	4	2		korytarz	f	f	f	t
-784	25	19	4	4		okno	f	f	f	t
-785	25	20	5	1		okno	f	f	f	t
-786	25	21	5	2		korytarz	f	f	f	t
-787	25	22	5	4		okno	f	f	f	t
-788	25	23	6	1		okno	f	f	f	t
-789	25	24	6	2		korytarz	f	f	f	t
-790	25	25	6	4		okno	f	f	f	t
-791	25	26	7	1		okno	f	f	f	f
-792	25	27	7	2		korytarz	f	f	f	f
-793	25	28	7	4		okno	f	f	f	f
-794	25	29	8	1		okno	f	f	f	f
-795	25	30	8	2		korytarz	f	f	f	f
-796	25	31	8	4		okno	f	f	f	f
-797	25	32	9	1		okno	f	f	f	f
-798	25	33	9	2		korytarz	f	f	f	f
-799	25	34	9	4		okno	f	f	f	f
-800	25	35	10	1		okno	f	f	f	f
-801	25	36	10	2		korytarz	f	f	f	f
-802	25	37	10	4		okno	f	f	f	f
-803	25	38	11	1		okno	f	f	f	f
-804	25	39	11	2		korytarz	f	f	f	f
-805	25	40	11	4		okno	f	f	f	f
+1	1	15	2	1		okno	f	f	f	t
+2	1	11	2	2		korytarz	f	f	f	t
+3	1	12	2	4		korytarz	f	f	f	t
+4	1	16	2	5		okno	f	f	f	t
+5	1	17	3	1		okno	f	f	f	f
+6	1	13	3	2		korytarz	f	f	f	f
+7	1	14	3	4		korytarz	f	f	f	f
+8	1	18	3	5		okno	f	f	f	f
+9	1	25	4	1		okno	f	f	f	t
+10	1	21	4	2		korytarz	f	f	f	t
+11	1	22	4	4		korytarz	f	f	f	t
+12	1	26	4	5		okno	f	f	f	t
+13	1	27	5	1		okno	f	f	f	f
+14	1	23	5	2		korytarz	f	f	f	f
+15	1	24	5	4		korytarz	f	f	f	f
+16	1	28	5	5		okno	f	f	f	f
+17	1	35	6	1		okno	f	f	f	t
+18	1	31	6	2		korytarz	f	f	f	t
+19	1	32	6	4		korytarz	f	f	f	t
+20	1	36	6	5		okno	f	f	f	t
+21	1	37	7	1		okno	t	f	f	f
+22	1	33	7	2		korytarz	t	f	f	f
+23	1	34	7	4		korytarz	t	f	f	f
+24	1	38	7	5		okno	t	f	f	f
+25	1	45	8	1		okno	t	f	f	t
+26	1	41	8	2		korytarz	t	f	f	t
+27	1	42	8	4		korytarz	t	f	f	t
+28	1	46	8	5		okno	t	f	f	t
+29	1	47	9	1		okno	f	f	f	f
+30	1	43	9	2		korytarz	f	f	f	f
+31	1	44	9	4		korytarz	f	f	f	f
+32	1	48	9	5		okno	f	f	f	f
+33	1	55	10	1		okno	f	f	f	t
+34	1	51	10	2		korytarz	f	f	f	t
+35	1	52	10	4		korytarz	f	f	f	t
+36	1	56	10	5		okno	f	f	f	t
+37	1	57	11	1		okno	f	f	f	f
+38	1	53	11	2		korytarz	f	f	f	f
+39	1	54	11	4		korytarz	f	f	f	f
+40	1	58	11	5		okno	f	f	f	f
+41	1	65	12	1		okno	f	f	f	t
+42	1	61	12	2		korytarz	f	f	f	t
+43	1	62	12	4		korytarz	f	f	f	t
+44	1	66	12	5		okno	f	f	f	t
+45	1	67	13	1		okno	f	f	f	f
+46	1	63	13	2		korytarz	f	f	f	f
+47	1	64	13	4		korytarz	f	f	f	f
+48	1	68	13	5		okno	f	f	f	f
+49	2	15	2	1		okno	f	f	f	t
+50	2	11	2	2		korytarz	f	f	f	t
+51	2	13	2	4		środek	f	f	f	t
+52	2	17	3	1		okno	f	f	f	f
+53	2	12	3	2		korytarz	f	f	f	f
+54	2	14	3	4		środek	f	f	f	f
+55	2	25	4	1		okno	f	f	f	t
+56	2	21	4	2		korytarz	f	f	f	t
+57	2	23	4	4		środek	f	f	f	t
+58	2	27	5	1		okno	t	f	f	f
+59	2	22	5	2		korytarz	t	f	f	f
+60	2	24	5	4		środek	t	f	f	f
+61	2	35	6	1		okno	t	f	f	t
+62	2	31	6	2		korytarz	t	f	f	t
+63	2	33	6	4		środek	t	f	f	t
+64	2	37	7	1		okno	f	f	f	f
+65	2	32	7	2		korytarz	f	f	f	f
+66	2	34	7	4		środek	f	f	f	f
+67	2	45	8	1		okno	f	f	f	t
+68	2	41	8	2		korytarz	f	f	f	t
+69	2	43	8	4		środek	f	f	f	t
+70	2	47	9	1		okno	f	f	f	f
+71	2	42	9	2		korytarz	f	f	f	f
+72	2	44	9	4		środek	f	f	f	f
+73	2	55	10	1		okno	f	f	f	t
+74	2	51	10	2		korytarz	f	f	f	t
+75	2	53	10	4		środek	f	f	f	t
+76	2	57	11	1		okno	f	f	f	f
+77	2	52	11	2		korytarz	f	f	f	f
+78	2	54	11	4		środek	f	f	f	f
+79	3	11	2	3	1	korytarz	f	f	f	t
+80	3	13	2	4	1	środek	f	f	f	t
+81	3	15	2	5	1	okno	t	f	f	t
+82	3	12	3	3	1	korytarz	f	f	f	f
+83	3	14	3	4	1	środek	f	f	f	f
+84	3	16	3	5	1	okno	t	f	f	f
+85	3	21	4	3	2	korytarz	f	f	f	t
+86	3	23	4	4	2	środek	f	f	f	t
+87	3	25	4	5	2	okno	t	f	f	t
+88	3	22	5	3	2	korytarz	f	f	f	f
+89	3	24	5	4	2	środek	f	f	f	f
+90	3	26	5	5	2	okno	t	f	f	f
+91	3	31	6	3	3	korytarz	f	f	f	t
+92	3	33	6	4	3	środek	f	f	f	t
+93	3	35	6	5	3	okno	t	f	f	t
+94	3	32	7	3	3	korytarz	f	f	f	f
+95	3	34	7	4	3	środek	f	f	f	f
+96	3	36	7	5	3	okno	t	f	f	f
+97	3	41	8	3	4	korytarz	f	f	f	t
+98	3	43	8	4	4	środek	f	f	f	t
+99	3	45	8	5	4	okno	t	f	f	t
+100	3	42	9	3	4	korytarz	f	f	f	f
+101	3	44	9	4	4	środek	f	f	f	f
+102	3	46	9	5	4	okno	t	f	f	f
+103	3	51	10	3	5	korytarz	f	f	f	t
+104	3	53	10	4	5	środek	f	f	f	t
+105	3	55	10	5	5	okno	t	f	f	t
+106	3	52	11	3	5	korytarz	f	f	f	f
+107	3	54	11	4	5	środek	f	f	f	f
+108	3	56	11	5	5	okno	t	f	f	f
+109	3	61	12	3	6	korytarz	f	f	f	t
+110	3	63	12	4	6	środek	f	f	f	t
+111	3	65	12	5	6	okno	t	f	f	t
+112	3	62	13	3	6	korytarz	f	f	f	f
+113	3	64	13	4	6	środek	f	f	f	f
+114	3	66	13	5	6	okno	t	f	f	f
+115	3	71	14	3	7	korytarz	f	f	f	t
+116	3	73	14	4	7	środek	f	f	f	t
+117	3	75	14	5	7	okno	t	f	f	t
+118	3	72	15	3	7	korytarz	f	f	f	f
+119	3	74	15	4	7	środek	f	f	f	f
+120	3	76	15	5	7	okno	t	f	f	f
+121	3	81	16	3	8	korytarz	f	f	f	t
+122	3	83	16	4	8	środek	f	f	f	t
+123	3	85	16	5	8	okno	t	f	f	t
+124	3	82	17	3	8	korytarz	f	f	f	f
+125	3	84	17	4	8	środek	f	f	f	f
+126	3	86	17	5	8	okno	t	f	f	f
+127	4	11	2	3	1	korytarz	f	f	f	t
+128	4	13	2	4	1	okno	t	f	f	t
+129	4	12	3	3	1	korytarz	f	f	f	f
+130	4	14	3	4	1	okno	t	f	f	f
+131	4	21	4	3	2	korytarz	f	f	f	t
+132	4	23	4	4	2	okno	t	f	f	t
+133	4	22	5	3	2	korytarz	f	f	f	f
+134	4	24	5	4	2	okno	t	f	f	f
+135	4	31	6	3	3	korytarz	f	f	f	t
+136	4	33	6	4	3	okno	t	f	f	t
+137	4	32	7	3	3	korytarz	f	f	f	f
+138	4	34	7	4	3	okno	t	f	f	f
+139	4	41	8	3	4	korytarz	f	f	f	t
+140	4	43	8	4	4	okno	t	f	f	t
+141	4	42	9	3	4	korytarz	f	f	f	f
+142	4	44	9	4	4	okno	t	f	f	f
+143	4	51	10	3	5	korytarz	f	f	f	t
+144	4	53	10	4	5	okno	t	f	f	t
+145	4	52	11	3	5	korytarz	f	f	f	f
+146	4	54	11	4	5	okno	t	f	f	f
+147	4	61	12	3	6	korytarz	f	f	f	t
+148	4	63	12	4	6	okno	t	f	f	t
+149	4	62	13	3	6	korytarz	f	f	f	f
+150	4	64	13	4	6	okno	t	f	f	f
+151	5	55	8	1		stolik_wars	t	f	f	
+152	5	51	8	2		stolik_wars	t	f	f	
+153	5	52	8	4		stolik_wars	t	f	f	
+154	5	56	8	5		stolik_wars	t	f	f	
+155	5	57	9	1		stolik_wars	t	f	f	
+156	5	53	9	2		stolik_wars	t	f	f	
+157	5	54	9	4		stolik_wars	t	f	f	
+158	5	58	9	5		stolik_wars	t	f	f	
+159	5	65	10	1		stolik_wars	t	f	f	
+160	5	61	10	2		stolik_wars	t	f	f	
+161	5	62	10	4		stolik_wars	t	f	f	
+162	5	66	10	5		stolik_wars	t	f	f	
+163	5	67	11	1		stolik_wars	t	f	f	
+164	5	63	11	2		stolik_wars	t	f	f	
+165	5	64	11	4		stolik_wars	t	f	f	
+166	5	68	11	5		stolik_wars	t	f	f	
+167	5	75	12	1		stolik_wars	t	f	f	
+168	5	71	12	2		stolik_wars	t	f	f	
+169	5	72	12	4		stolik_wars	t	f	f	
+170	5	76	12	5		stolik_wars	t	f	f	
+171	5	77	13	1		stolik_wars	t	f	f	
+172	5	73	13	2		stolik_wars	t	f	f	
+173	5	74	13	4		stolik_wars	t	f	f	
+174	5	78	13	5		stolik_wars	t	f	f	
+175	6	15	2	1		okno	f	f	t	t
+176	6	11	2	2		korytarz	f	f	f	t
+177	6	12	2	4		korytarz	f	f	f	t
+178	6	16	2	5		okno	f	f	t	t
+179	6	17	3	1		okno	f	f	t	f
+180	6	13	3	2		korytarz	f	f	f	f
+181	6	14	3	4		korytarz	f	f	f	f
+182	6	18	3	5		okno	f	f	t	f
+183	6	25	4	1		okno	f	f	t	t
+184	6	21	4	2		korytarz	f	f	f	t
+185	6	22	4	4		korytarz	f	f	f	t
+186	6	26	4	5		okno	f	f	t	t
+187	6	27	5	1		okno	f	f	t	f
+188	6	23	5	2		korytarz	f	f	f	f
+189	6	24	5	4		korytarz	f	f	f	f
+190	6	28	5	5		okno	f	f	t	f
+191	6	35	6	1		okno	f	f	t	t
+192	6	31	6	2		korytarz	f	f	f	t
+193	6	32	6	4		korytarz	f	f	f	t
+194	6	36	6	5		okno	f	f	t	t
+195	6	37	7	1		okno	f	f	t	f
+196	6	33	7	2		korytarz	f	f	f	f
+197	6	34	7	4		korytarz	f	f	f	f
+198	6	38	7	5		okno	f	f	t	f
+199	6	45	8	1		okno	f	f	t	t
+200	6	41	8	2		korytarz	f	f	f	t
+201	6	42	8	4		korytarz	f	f	f	t
+202	6	46	8	5		okno	f	f	t	t
+203	6	47	9	1		okno	f	f	t	f
+204	6	43	9	2		korytarz	f	f	f	f
+205	6	44	9	4		korytarz	f	f	f	f
+206	6	48	9	5		okno	f	f	t	f
+207	6	55	10	1		okno	f	f	t	t
+208	6	51	10	2		korytarz	f	f	f	t
+209	6	52	10	4		korytarz	f	f	f	t
+210	6	56	10	5		okno	f	f	t	t
+211	6	57	11	1		okno	f	f	t	f
+212	6	53	11	2		korytarz	f	f	f	f
+213	6	54	11	4		korytarz	f	f	f	f
+214	6	58	11	5		okno	f	f	t	f
+215	7	15	2	1		okno	f	f	f	
+216	7	11	2	2		korytarz	f	f	f	
+217	7	12	2	4		korytarz	f	f	f	
+218	7	16	2	5		okno	f	f	f	
+219	7	17	3	1		okno	f	f	f	
+220	7	13	3	2		korytarz	f	f	f	
+221	7	14	3	4		korytarz	f	f	f	
+222	7	18	3	5		okno	f	f	f	
+223	7	25	4	1		okno	f	f	f	
+224	7	21	4	2		korytarz	f	f	f	
+225	7	22	4	4		korytarz	f	f	f	
+226	7	26	4	5		okno	f	f	f	
+227	7	27	5	1		okno	f	f	f	
+228	7	23	5	2		korytarz	f	f	f	
+229	7	24	5	4		korytarz	f	f	f	
+230	7	28	5	5		okno	f	f	f	
+231	7	35	6	1		okno	f	f	f	
+232	7	31	6	2		korytarz	f	f	f	
+233	7	32	6	4		korytarz	f	f	f	
+234	7	36	6	5		okno	f	f	f	
+235	7	37	7	1		okno	f	f	f	
+236	7	33	7	2		korytarz	f	f	f	
+237	7	34	7	4		korytarz	f	f	f	
+238	7	38	7	5		okno	f	f	f	
+239	7	45	8	1		okno	f	f	f	
+240	7	41	8	2		korytarz	f	f	f	
+241	7	42	8	4		korytarz	f	f	f	
+242	7	46	8	5		okno	f	f	f	
+243	7	47	9	1		okno	f	f	f	
+244	7	43	9	2		korytarz	f	f	f	
+245	7	44	9	4		korytarz	f	f	f	
+246	7	48	9	5		okno	f	f	f	
+247	7	55	10	1		okno	f	f	f	
+248	7	51	10	2		korytarz	f	f	f	
+249	7	52	10	4		korytarz	f	f	f	
+250	7	56	10	5		okno	f	f	f	
+251	7	57	11	1		okno	f	f	f	
+252	7	53	11	2		korytarz	f	f	f	
+253	7	54	11	4		korytarz	f	f	f	
+254	7	58	11	5		okno	f	f	f	
+255	7	65	12	1		okno	f	f	f	
+256	7	61	12	2		korytarz	f	f	f	
+257	7	62	12	4		korytarz	f	f	f	
+258	7	66	12	5		okno	f	f	f	
+259	7	67	13	1		okno	f	f	f	
+260	7	63	13	2		korytarz	f	f	f	
+261	7	64	13	4		korytarz	f	f	f	
+262	7	68	13	5		okno	f	f	f	
+263	7	75	14	1		okno	f	f	f	
+264	7	71	14	2		korytarz	f	f	f	
+265	7	72	14	4		korytarz	f	f	f	
+266	7	76	14	5		okno	f	f	f	
+267	7	77	15	1		okno	f	f	f	
+268	7	73	15	2		korytarz	f	f	f	
+269	7	74	15	4		korytarz	f	f	f	
+270	7	78	15	5		okno	f	f	f	
+271	8	15	4	1		prm	f	t	f	t
+272	8	11	4	2		prm	f	t	f	t
+273	8	12	4	4		prm	f	t	f	t
+274	8	16	4	5		prm	f	t	f	t
+275	8	17	5	1		prm	f	t	f	f
+276	8	13	5	2		prm	f	t	f	f
+277	8	14	5	4		prm	f	t	f	f
+278	8	18	5	5		prm	f	t	f	f
+279	8	25	6	1		prm	f	t	f	t
+280	8	21	6	2		prm	f	t	f	t
+281	8	22	6	4		prm	f	t	f	t
+282	8	26	6	5		prm	f	t	f	t
+283	8	27	7	1		prm	f	t	f	f
+284	8	23	7	2		prm	f	t	f	f
+285	8	24	7	4		prm	f	t	f	f
+286	8	28	7	5		prm	f	t	f	f
+287	8	35	8	1		prm	f	t	f	t
+288	8	31	8	2		prm	f	t	f	t
+289	8	32	8	4		prm	f	t	f	t
+290	8	36	8	5		prm	f	t	f	t
+291	8	37	9	1		prm	f	t	f	f
+292	8	33	9	2		prm	f	t	f	f
+293	8	34	9	4		prm	f	t	f	f
+294	8	38	9	5		prm	f	t	f	f
+295	9	11	2	3	1	vip	f	f	f	t
+296	9	13	2	4	1	vip	t	f	f	t
+297	9	12	3	3	1	vip	f	f	f	f
+298	9	14	3	4	1	vip	t	f	f	f
+299	9	21	4	3	2	vip	f	f	f	t
+300	9	23	4	4	2	vip	t	f	f	t
+301	9	22	5	3	2	vip	f	f	f	f
+302	9	24	5	4	2	vip	t	f	f	f
+303	9	31	6	3	3	vip	f	f	f	t
+304	9	33	6	4	3	vip	t	f	f	t
+305	9	32	7	3	3	vip	f	f	f	f
+306	9	34	7	4	3	vip	t	f	f	f
+307	9	41	8	3	4	vip	f	f	f	t
+308	9	43	8	4	4	vip	t	f	f	t
+309	9	42	9	3	4	vip	f	f	f	f
+310	9	44	9	4	4	vip	t	f	f	f
+311	10	15	4	1		rodzinne	t	f	f	t
+312	10	11	4	2		rodzinne	t	f	f	t
+313	10	12	4	4		rodzinne	t	f	f	t
+314	10	16	4	5		rodzinne	t	f	f	t
+315	10	17	5	1		rodzinne	t	f	f	f
+316	10	13	5	2		rodzinne	t	f	f	f
+317	10	14	5	4		rodzinne	t	f	f	f
+318	10	18	5	5		rodzinne	t	f	f	f
+319	10	25	6	1		rodzinne	t	f	f	t
+320	10	21	6	2		rodzinne	t	f	f	t
+321	10	22	6	4		rodzinne	t	f	f	t
+322	10	26	6	5		rodzinne	t	f	f	t
+323	10	27	7	1		rodzinne	t	f	f	f
+324	10	23	7	2		rodzinne	t	f	f	f
+325	10	24	7	4		rodzinne	t	f	f	f
+326	10	28	7	5		rodzinne	t	f	f	f
+327	10	35	8	1		rodzinne	t	f	f	t
+328	10	31	8	2		rodzinne	t	f	f	t
+329	10	32	8	4		rodzinne	t	f	f	t
+330	10	36	8	5		rodzinne	t	f	f	t
+331	10	37	9	1		rodzinne	t	f	f	f
+332	10	33	9	2		rodzinne	t	f	f	f
+333	10	34	9	4		rodzinne	t	f	f	f
+334	10	38	9	5		rodzinne	t	f	f	f
+335	10	45	10	1		rodzinne	t	f	f	t
+336	10	41	10	2		rodzinne	t	f	f	t
+337	10	42	10	4		rodzinne	t	f	f	t
+338	10	46	10	5		rodzinne	t	f	f	t
+339	10	47	11	1		rodzinne	t	f	f	f
+340	10	43	11	2		rodzinne	t	f	f	f
+341	10	44	11	4		rodzinne	t	f	f	f
+342	10	48	11	5		rodzinne	t	f	f	f
+343	10	55	12	1		rodzinne	t	f	f	t
+344	10	51	12	2		rodzinne	t	f	f	t
+345	10	52	12	4		rodzinne	t	f	f	t
+346	10	56	12	5		rodzinne	t	f	f	t
+347	10	57	13	1		rodzinne	t	f	f	f
+348	10	53	13	2		rodzinne	t	f	f	f
+349	10	54	13	4		rodzinne	t	f	f	f
+350	10	58	13	5		rodzinne	t	f	f	f
+351	10	65	14	1		rodzinne	t	f	f	t
+352	10	61	14	2		rodzinne	t	f	f	t
+353	10	62	14	4		rodzinne	t	f	f	t
+354	10	66	14	5		rodzinne	t	f	f	t
+355	10	67	15	1		rodzinne	t	f	f	f
+356	10	63	15	2		rodzinne	t	f	f	f
+357	10	64	15	4		rodzinne	t	f	f	f
+358	10	68	15	5		rodzinne	t	f	f	f
+359	11	11	2	4	1	kuszetka	f	f	f	t
+360	11	13	2	5	1	kuszetka	t	f	f	t
+361	11	12	3	4	1	kuszetka	f	f	f	f
+362	11	14	3	5	1	kuszetka	t	f	f	f
+363	11	21	4	4	2	kuszetka	f	f	f	t
+364	11	23	4	5	2	kuszetka	t	f	f	t
+365	11	22	5	4	2	kuszetka	f	f	f	f
+366	11	24	5	5	2	kuszetka	t	f	f	f
+367	11	31	6	4	3	kuszetka	f	f	f	t
+368	11	33	6	5	3	kuszetka	t	f	f	t
+369	11	32	7	4	3	kuszetka	f	f	f	f
+370	11	34	7	5	3	kuszetka	t	f	f	f
+371	11	41	8	4	4	kuszetka	f	f	f	t
+372	11	43	8	5	4	kuszetka	t	f	f	t
+373	11	42	9	4	4	kuszetka	f	f	f	f
+374	11	44	9	5	4	kuszetka	t	f	f	f
+375	11	51	10	4	5	kuszetka	f	f	f	t
+376	11	53	10	5	5	kuszetka	t	f	f	t
+377	11	52	11	4	5	kuszetka	f	f	f	f
+378	11	54	11	5	5	kuszetka	t	f	f	f
+379	12	11	3	4	1	sypialny	f	f	f	
+380	12	12	4	4	1	sypialny	f	f	f	
+381	12	21	5	4	2	sypialny	f	f	f	
+382	12	22	6	4	2	sypialny	f	f	f	
+383	12	31	7	4	3	sypialny	f	f	f	
+384	12	32	8	4	3	sypialny	f	f	f	
+385	12	41	9	4	4	sypialny	f	f	f	
+386	12	42	10	4	4	sypialny	f	f	f	
+387	13	15	3	1		okno	t	f	f	t
+388	13	11	3	2		korytarz	t	f	f	t
+389	13	12	3	4		korytarz	t	f	f	t
+390	13	16	3	5		okno	t	f	f	t
+391	13	17	4	1		okno	t	f	f	f
+392	13	13	4	2		korytarz	t	f	f	f
+393	13	14	4	4		korytarz	t	f	f	f
+394	13	18	4	5		okno	t	f	f	f
+395	13	25	5	1		okno	t	f	f	t
+396	13	21	5	2		korytarz	t	f	f	t
+397	13	22	5	4		korytarz	t	f	f	t
+398	13	26	5	5		okno	t	f	f	t
+399	13	27	6	1		okno	f	f	f	f
+400	13	23	6	2		korytarz	f	f	f	f
+401	13	24	6	4		korytarz	f	f	f	f
+402	13	28	6	5		okno	f	f	f	f
+403	13	35	7	1		okno	f	f	f	t
+404	13	31	7	2		korytarz	f	f	f	t
+405	13	32	7	4		korytarz	f	f	f	t
+406	13	36	7	5		okno	f	f	f	t
+407	13	37	8	1		okno	f	f	f	f
+408	13	33	8	2		korytarz	f	f	f	f
+409	13	34	8	4		korytarz	f	f	f	f
+410	13	38	8	5		okno	f	f	f	f
+411	13	45	9	1		okno	f	f	f	t
+412	13	41	9	2		korytarz	f	f	f	t
+413	13	42	9	4		korytarz	f	f	f	t
+414	13	46	9	5		okno	f	f	f	t
+415	13	47	10	1		okno	f	f	f	f
+416	13	43	10	2		korytarz	f	f	f	f
+417	13	44	10	4		korytarz	f	f	f	f
+418	13	48	10	5		okno	f	f	f	f
+419	13	55	11	1		okno	f	f	f	t
+420	13	51	11	2		korytarz	f	f	f	t
+421	13	52	11	4		korytarz	f	f	f	t
+422	13	56	11	5		okno	f	f	f	t
+423	13	57	12	1		okno	f	f	f	f
+424	13	53	12	2		korytarz	f	f	f	f
+425	13	54	12	4		korytarz	f	f	f	f
+426	13	58	12	5		okno	f	f	f	f
+427	14	11	2	3	1	kuszetka	f	f	f	t
+428	14	13	2	4	1	kuszetka	f	f	f	t
+429	14	15	2	5	1	kuszetka	t	f	f	t
+430	14	12	3	3	1	kuszetka	f	f	f	f
+431	14	14	3	4	1	kuszetka	f	f	f	f
+432	14	16	3	5	1	kuszetka	t	f	f	f
+433	14	21	4	3	2	kuszetka	f	f	f	t
+434	14	23	4	4	2	kuszetka	f	f	f	t
+435	14	25	4	5	2	kuszetka	t	f	f	t
+436	14	22	5	3	2	kuszetka	f	f	f	f
+437	14	24	5	4	2	kuszetka	f	f	f	f
+438	14	26	5	5	2	kuszetka	t	f	f	f
+439	14	31	6	3	3	kuszetka	f	f	f	t
+440	14	33	6	4	3	kuszetka	f	f	f	t
+441	14	35	6	5	3	kuszetka	t	f	f	t
+442	14	32	7	3	3	kuszetka	f	f	f	f
+443	14	34	7	4	3	kuszetka	f	f	f	f
+444	14	36	7	5	3	kuszetka	t	f	f	f
+445	14	41	8	3	4	kuszetka	f	f	f	t
+446	14	43	8	4	4	kuszetka	f	f	f	t
+447	14	45	8	5	4	kuszetka	t	f	f	t
+448	14	42	9	3	4	kuszetka	f	f	f	f
+449	14	44	9	4	4	kuszetka	f	f	f	f
+450	14	46	9	5	4	kuszetka	t	f	f	f
+451	14	51	10	3	5	kuszetka	f	f	f	t
+452	14	53	10	4	5	kuszetka	f	f	f	t
+453	14	55	10	5	5	kuszetka	t	f	f	t
+454	14	52	11	3	5	kuszetka	f	f	f	f
+455	14	54	11	4	5	kuszetka	f	f	f	f
+456	14	56	11	5	5	kuszetka	t	f	f	f
+457	14	61	12	3	6	kuszetka	f	f	f	t
+458	14	63	12	4	6	kuszetka	f	f	f	t
+459	14	65	12	5	6	kuszetka	t	f	f	t
+460	14	62	13	3	6	kuszetka	f	f	f	f
+461	14	64	13	4	6	kuszetka	f	f	f	f
+462	14	66	13	5	6	kuszetka	t	f	f	f
+463	15	15	2	1		okno	f	f	f	t
+464	15	11	2	2		korytarz	f	f	f	t
+465	15	12	2	4		korytarz	f	f	f	t
+466	15	16	2	5		okno	f	f	f	t
+467	15	17	3	1		okno	f	f	f	f
+468	15	13	3	2		korytarz	f	f	f	f
+469	15	14	3	4		korytarz	f	f	f	f
+470	15	18	3	5		okno	f	f	f	f
+471	15	25	4	1		okno	f	f	f	t
+472	15	21	4	2		korytarz	f	f	f	t
+473	15	22	4	4		korytarz	f	f	f	t
+474	15	26	4	5		okno	f	f	f	t
+475	15	27	5	1		okno	f	f	f	f
+476	15	23	5	2		korytarz	f	f	f	f
+477	15	24	5	4		korytarz	f	f	f	f
+478	15	28	5	5		okno	f	f	f	f
+479	15	35	6	1		okno	t	f	f	t
+480	15	31	6	2		korytarz	t	f	f	t
+481	15	32	6	4		korytarz	t	f	f	t
+482	15	36	6	5		okno	t	f	f	t
+483	15	37	7	1		okno	t	f	f	f
+484	15	33	7	2		korytarz	t	f	f	f
+485	15	34	7	4		korytarz	t	f	f	f
+486	15	38	7	5		okno	t	f	f	f
+487	15	45	9	1		okno	t	f	f	t
+488	15	41	9	2		korytarz	t	f	f	t
+489	15	42	9	4		korytarz	t	f	f	t
+490	15	46	9	5		okno	t	f	f	t
+491	15	47	10	1		okno	t	f	f	f
+492	15	43	10	2		korytarz	t	f	f	f
+493	15	44	10	4		korytarz	t	f	f	f
+494	15	48	10	5		okno	t	f	f	f
+495	15	55	11	1		okno	f	f	f	t
+496	15	51	11	2		korytarz	f	f	f	t
+497	15	52	11	4		korytarz	f	f	f	t
+498	15	56	11	5		okno	f	f	f	t
+499	15	57	12	1		okno	f	f	f	f
+500	15	53	12	2		korytarz	f	f	f	f
+501	15	54	12	4		korytarz	f	f	f	f
+502	15	58	12	5		okno	f	f	f	f
+503	15	65	13	1		okno	f	f	f	t
+504	15	61	13	2		korytarz	f	f	f	t
+505	15	62	13	4		korytarz	f	f	f	t
+506	15	66	13	5		okno	f	f	f	t
+507	15	67	14	1		okno	f	f	f	f
+508	15	63	14	2		korytarz	f	f	f	f
+509	15	64	14	4		korytarz	f	f	f	f
+510	15	68	14	5		okno	f	f	f	f
+511	16	15	2	1		okno	f	f	f	t
+512	16	11	2	2		korytarz	f	f	f	t
+513	16	13	2	4		środek	f	f	f	t
+514	16	17	3	1		okno	f	f	f	f
+515	16	12	3	2		korytarz	f	f	f	f
+516	16	14	3	4		środek	f	f	f	f
+517	16	25	4	1		okno	f	f	f	t
+518	16	21	4	2		korytarz	f	f	f	t
+519	16	23	4	4		środek	f	f	f	t
+520	16	27	5	1		okno	f	f	f	f
+521	16	22	5	2		korytarz	f	f	f	f
+522	16	24	5	4		środek	f	f	f	f
+523	16	35	6	1		okno	f	f	f	t
+524	16	31	6	2		korytarz	f	f	f	t
+525	16	33	6	4		środek	f	f	f	t
+526	16	37	7	1		okno	f	f	f	f
+527	16	32	7	2		korytarz	f	f	f	f
+528	16	34	7	4		środek	f	f	f	f
+529	16	45	8	1		okno	f	f	f	t
+530	16	41	8	2		korytarz	f	f	f	t
+531	16	43	8	4		środek	f	f	f	t
+532	16	47	9	1		okno	f	f	f	f
+533	16	42	9	2		korytarz	f	f	f	f
+534	16	44	9	4		środek	f	f	f	f
+535	16	55	10	1		okno	f	f	f	t
+536	16	51	10	2		korytarz	f	f	f	t
+537	16	53	10	4		środek	f	f	f	t
+538	16	57	11	1		okno	f	f	f	f
+539	16	52	11	2		korytarz	f	f	f	f
+540	16	54	11	4		środek	f	f	f	f
+541	17	15	5	1		okno	t	f	f	t
+542	17	11	5	2		korytarz	t	f	f	t
+543	17	13	5	4		środek	t	f	f	t
+544	17	17	6	1		okno	t	f	f	f
+545	17	12	6	2		korytarz	t	f	f	f
+546	17	14	6	4		środek	t	f	f	f
+547	17	25	7	1		okno	t	f	f	t
+548	17	21	7	2		korytarz	t	f	f	t
+549	17	23	7	4		środek	t	f	f	t
+550	17	27	8	1		okno	t	f	f	f
+551	17	22	8	2		korytarz	t	f	f	f
+552	17	24	8	4		środek	t	f	f	f
+553	17	35	9	1		okno	f	f	f	t
+554	17	31	9	2		korytarz	f	f	f	t
+555	17	33	9	4		środek	f	f	f	t
+556	17	37	10	1		okno	f	f	f	f
+557	17	32	10	2		korytarz	f	f	f	f
+558	17	34	10	4		środek	f	f	f	f
+559	17	45	11	1		okno	f	f	f	t
+560	17	41	11	2		korytarz	f	f	f	t
+561	17	43	11	4		środek	f	f	f	t
+562	17	47	12	1		okno	f	f	f	f
+563	17	42	12	2		korytarz	f	f	f	f
+564	17	44	12	4		środek	f	f	f	f
+565	18	15	2	1		okno	f	f	f	t
+566	18	11	2	2		korytarz	f	f	f	t
+567	18	12	2	4		korytarz	f	f	f	t
+568	18	16	2	5		okno	f	f	f	t
+569	18	17	3	1		okno	f	f	f	f
+570	18	13	3	2		korytarz	f	f	f	f
+571	18	14	3	4		korytarz	f	f	f	f
+572	18	18	3	5		okno	f	f	f	f
+573	18	25	4	1		okno	f	f	f	t
+574	18	21	4	2		korytarz	f	f	f	t
+575	18	22	4	4		korytarz	f	f	f	t
+576	18	26	4	5		okno	f	f	f	t
+577	18	27	5	1		okno	f	f	f	f
+578	18	23	5	2		korytarz	f	f	f	f
+579	18	24	5	4		korytarz	f	f	f	f
+580	18	28	5	5		okno	f	f	f	f
+581	18	35	6	1		okno	f	f	f	t
+582	18	31	6	2		korytarz	f	f	f	t
+583	18	32	6	4		korytarz	f	f	f	t
+584	18	36	6	5		okno	f	f	f	t
+585	18	37	7	1		okno	f	f	f	f
+586	18	33	7	2		korytarz	f	f	f	f
+587	18	34	7	4		korytarz	f	f	f	f
+588	18	38	7	5		okno	f	f	f	f
+589	18	45	8	1		okno	f	f	f	t
+590	18	41	8	2		korytarz	f	f	f	t
+591	18	42	8	4		korytarz	f	f	f	t
+592	18	46	8	5		okno	f	f	f	t
+593	18	47	9	1		okno	f	f	f	f
+594	18	43	9	2		korytarz	f	f	f	f
+595	18	44	9	4		korytarz	f	f	f	f
+596	18	48	9	5		okno	f	f	f	f
+597	18	55	10	1		okno	f	f	f	t
+598	18	51	10	2		korytarz	f	f	f	t
+599	18	52	10	4		korytarz	f	f	f	t
+600	18	56	10	5		okno	f	f	f	t
+601	18	57	11	1		okno	f	f	f	f
+602	18	53	11	2		korytarz	f	f	f	f
+603	18	54	11	4		korytarz	f	f	f	f
+604	18	58	11	5		okno	f	f	f	f
+605	18	65	12	1		okno	f	f	f	t
+606	18	61	12	2		korytarz	f	f	f	t
+607	18	62	12	4		korytarz	f	f	f	t
+608	18	66	12	5		okno	f	f	f	t
+609	18	67	13	1		okno	f	f	f	f
+610	18	63	13	2		korytarz	f	f	f	f
+611	18	64	13	4		korytarz	f	f	f	f
+612	18	68	13	5		okno	f	f	f	f
+613	19	11	2	3	1	korytarz	f	f	f	t
+614	19	13	2	4	1	okno	t	f	f	t
+615	19	12	3	3	1	korytarz	f	f	f	f
+616	19	14	3	4	1	okno	t	f	f	f
+617	19	21	4	3	2	korytarz	f	f	f	t
+618	19	23	4	4	2	okno	t	f	f	t
+619	19	22	5	3	2	korytarz	f	f	f	f
+620	19	24	5	4	2	okno	t	f	f	f
+621	19	31	6	3	3	korytarz	f	f	f	t
+622	19	33	6	4	3	okno	t	f	f	t
+623	19	32	7	3	3	korytarz	f	f	f	f
+624	19	34	7	4	3	okno	t	f	f	f
+625	19	41	8	3	4	korytarz	f	f	f	t
+626	19	43	8	4	4	okno	t	f	f	t
+627	19	42	9	3	4	korytarz	f	f	f	f
+628	19	44	9	4	4	okno	t	f	f	f
+629	19	51	10	3	5	korytarz	f	f	f	t
+630	19	53	10	4	5	okno	t	f	f	t
+631	19	52	11	3	5	korytarz	f	f	f	f
+632	19	54	11	4	5	okno	t	f	f	f
+633	20	11	2	3	1	korytarz	f	f	f	t
+634	20	13	2	4	1	środek	f	f	f	t
+635	20	15	2	5	1	okno	t	f	f	t
+636	20	12	3	3	1	korytarz	f	f	f	f
+637	20	14	3	4	1	środek	f	f	f	f
+638	20	16	3	5	1	okno	t	f	f	f
+639	20	21	4	3	2	korytarz	f	f	f	t
+640	20	23	4	4	2	środek	f	f	f	t
+641	20	25	4	5	2	okno	t	f	f	t
+642	20	22	5	3	2	korytarz	f	f	f	f
+643	20	24	5	4	2	środek	f	f	f	f
+644	20	26	5	5	2	okno	t	f	f	f
+645	20	31	6	3	3	korytarz	f	f	f	t
+646	20	33	6	4	3	środek	f	f	f	t
+647	20	35	6	5	3	okno	t	f	f	t
+648	20	32	7	3	3	korytarz	f	f	f	f
+649	20	34	7	4	3	środek	f	f	f	f
+650	20	36	7	5	3	okno	t	f	f	f
+651	20	41	8	3	4	korytarz	f	f	f	t
+652	20	43	8	4	4	środek	f	f	f	t
+653	20	45	8	5	4	okno	t	f	f	t
+654	20	42	9	3	4	korytarz	f	f	f	f
+655	20	44	9	4	4	środek	f	f	f	f
+656	20	46	9	5	4	okno	t	f	f	f
+657	20	51	10	3	5	korytarz	f	f	f	t
+658	20	53	10	4	5	środek	f	f	f	t
+659	20	55	10	5	5	okno	t	f	f	t
+660	20	52	11	3	5	korytarz	f	f	f	f
+661	20	54	11	4	5	środek	f	f	f	f
+662	20	56	11	5	5	okno	t	f	f	f
+663	20	61	12	3	6	korytarz	f	f	f	t
+664	20	63	12	4	6	środek	f	f	f	t
+665	20	65	12	5	6	okno	t	f	f	t
+666	20	62	13	3	6	korytarz	f	f	f	f
+667	20	64	13	4	6	środek	f	f	f	f
+668	20	66	13	5	6	okno	t	f	f	f
+669	20	71	14	3	7	korytarz	f	f	f	t
+670	20	73	14	4	7	środek	f	f	f	t
+671	20	75	14	5	7	okno	t	f	f	t
+672	20	72	15	3	7	korytarz	f	f	f	f
+673	20	74	15	4	7	środek	f	f	f	f
+674	20	76	15	5	7	okno	t	f	f	f
+675	21	15	2	1		okno	f	f	f	t
+676	21	11	2	2		korytarz	f	f	f	t
+677	21	12	2	4		korytarz	f	f	f	t
+678	21	16	2	5		okno	f	f	f	t
+679	21	17	3	1		okno	f	f	f	f
+680	21	13	3	2		korytarz	f	f	f	f
+681	21	14	3	4		korytarz	f	f	f	f
+682	21	18	3	5		okno	f	f	f	f
+683	21	25	4	1		okno	f	f	f	t
+684	21	21	4	2		korytarz	f	f	f	t
+685	21	22	4	4		korytarz	f	f	f	t
+686	21	26	4	5		okno	f	f	f	t
+687	21	27	5	1		okno	f	f	f	f
+688	21	23	5	2		korytarz	f	f	f	f
+689	21	24	5	4		korytarz	f	f	f	f
+690	21	28	5	5		okno	f	f	f	f
+691	21	35	6	1		okno	f	f	f	t
+692	21	31	6	2		korytarz	f	f	f	t
+693	21	32	6	4		korytarz	f	f	f	t
+694	21	36	6	5		okno	f	f	f	t
+695	21	37	7	1		okno	f	f	f	f
+696	21	33	7	2		korytarz	f	f	f	f
+697	21	34	7	4		korytarz	f	f	f	f
+698	21	38	7	5		okno	f	f	f	f
+699	21	45	8	1		okno	f	f	f	t
+700	21	41	8	2		korytarz	f	f	f	t
+701	21	42	8	4		korytarz	f	f	f	t
+702	21	46	8	5		okno	f	f	f	t
+703	21	47	9	1		okno	f	f	f	f
+704	21	43	9	2		korytarz	f	f	f	f
+705	21	44	9	4		korytarz	f	f	f	f
+706	21	48	9	5		okno	f	f	f	f
+707	21	55	10	1		okno	f	f	f	t
+708	21	51	10	2		korytarz	f	f	f	t
+709	21	52	10	4		korytarz	f	f	f	t
+710	21	56	10	5		okno	f	f	f	t
+711	21	57	11	1		okno	f	f	f	f
+712	21	53	11	2		korytarz	f	f	f	f
+713	21	54	11	4		korytarz	f	f	f	f
+714	21	58	11	5		okno	f	f	f	f
+715	21	65	12	1		okno	f	f	f	t
+716	21	61	12	2		korytarz	f	f	f	t
+717	21	62	12	4		korytarz	f	f	f	t
+718	21	66	12	5		okno	f	f	f	t
+719	21	67	13	1		okno	f	f	f	f
+720	21	63	13	2		korytarz	f	f	f	f
+721	21	64	13	4		korytarz	f	f	f	f
+722	21	68	13	5		okno	f	f	f	f
+723	21	75	14	1		okno	f	f	f	t
+724	21	71	14	2		korytarz	f	f	f	t
+725	21	72	14	4		korytarz	f	f	f	t
+726	21	76	14	5		okno	f	f	f	t
+727	21	77	15	1		okno	f	f	f	f
+728	21	73	15	2		korytarz	f	f	f	f
+729	21	74	15	4		korytarz	f	f	f	f
+730	21	78	15	5		okno	f	f	f	f
+731	22	15	9	1		bar	f	f	f	
+732	22	11	9	2		bar	f	f	f	
+733	22	12	9	4		bar	f	f	f	
+734	22	16	9	5		bar	f	f	f	
+735	22	17	10	1		bar	f	f	f	
+736	22	13	10	2		bar	f	f	f	
+737	22	14	10	4		bar	f	f	f	
+738	22	18	10	5		bar	f	f	f	
+739	22	25	11	1		bar	f	f	f	
+740	22	21	11	2		bar	f	f	f	
+741	22	22	11	4		bar	f	f	f	
+742	22	26	11	5		bar	f	f	f	
+743	22	27	12	1		bar	f	f	f	
+744	22	23	12	2		bar	f	f	f	
+745	22	24	12	4		bar	f	f	f	
+746	22	28	12	5		bar	f	f	f	
+747	23	15	2	1		okno	f	f	t	t
+748	23	11	2	2		korytarz	f	f	f	t
+749	23	12	2	4		korytarz	f	f	f	t
+750	23	16	2	5		okno	f	f	f	t
+751	23	17	3	1		okno	f	f	t	f
+752	23	13	3	2		korytarz	f	f	f	f
+753	23	14	3	4		korytarz	f	f	f	f
+754	23	18	3	5		okno	f	f	f	f
+755	23	25	4	1		okno	f	f	t	t
+756	23	21	4	2		korytarz	f	f	f	t
+757	23	22	4	4		korytarz	f	f	f	t
+758	23	26	4	5		okno	f	f	f	t
+759	23	27	5	1		okno	f	f	t	f
+760	23	23	5	2		korytarz	f	f	f	f
+761	23	24	5	4		korytarz	f	f	f	f
+762	23	28	5	5		okno	f	f	f	f
+763	23	35	6	1		okno	f	f	t	t
+764	23	31	6	2		korytarz	f	f	f	t
+765	23	32	6	4		korytarz	f	f	f	t
+766	23	36	6	5		okno	f	f	f	t
+767	23	37	7	1		okno	f	f	t	f
+768	23	33	7	2		korytarz	f	f	f	f
+769	23	34	7	4		korytarz	f	f	f	f
+770	23	38	7	5		okno	f	f	f	f
+771	23	45	8	1		okno	f	f	t	t
+772	23	41	8	2		korytarz	f	f	f	t
+773	23	42	8	4		korytarz	f	f	f	t
+774	23	46	8	5		okno	f	f	f	t
+775	23	47	9	1		okno	f	f	t	f
+776	23	43	9	2		korytarz	f	f	f	f
+777	23	44	9	4		korytarz	f	f	f	f
+778	23	48	9	5		okno	f	f	f	f
+779	24	11	2	3	1	siedzący_nocny	f	f	f	t
+780	24	13	2	4	1	siedzący_nocny	f	f	f	t
+781	24	15	2	5	1	siedzący_nocny	t	f	f	t
+782	24	12	3	3	1	siedzący_nocny	f	f	f	f
+783	24	14	3	4	1	siedzący_nocny	f	f	f	f
+784	24	16	3	5	1	siedzący_nocny	t	f	f	f
+785	24	21	4	3	2	siedzący_nocny	f	f	f	t
+786	24	23	4	4	2	siedzący_nocny	f	f	f	t
+787	24	25	4	5	2	siedzący_nocny	t	f	f	t
+788	24	22	5	3	2	siedzący_nocny	f	f	f	f
+789	24	24	5	4	2	siedzący_nocny	f	f	f	f
+790	24	26	5	5	2	siedzący_nocny	t	f	f	f
+791	24	31	6	3	3	siedzący_nocny	f	f	f	t
+792	24	33	6	4	3	siedzący_nocny	f	f	f	t
+793	24	35	6	5	3	siedzący_nocny	t	f	f	t
+794	24	32	7	3	3	siedzący_nocny	f	f	f	f
+795	24	34	7	4	3	siedzący_nocny	f	f	f	f
+796	24	36	7	5	3	siedzący_nocny	t	f	f	f
+797	24	41	8	3	4	siedzący_nocny	f	f	f	t
+798	24	43	8	4	4	siedzący_nocny	f	f	f	t
+799	24	45	8	5	4	siedzący_nocny	t	f	f	t
+800	24	42	9	3	4	siedzący_nocny	f	f	f	f
+801	24	44	9	4	4	siedzący_nocny	f	f	f	f
+802	24	46	9	5	4	siedzący_nocny	t	f	f	f
+803	24	51	10	3	5	siedzący_nocny	f	f	f	t
+804	24	53	10	4	5	siedzący_nocny	f	f	f	t
+805	24	55	10	5	5	siedzący_nocny	t	f	f	t
+806	24	52	11	3	5	siedzący_nocny	f	f	f	f
+807	24	54	11	4	5	siedzący_nocny	f	f	f	f
+808	24	56	11	5	5	siedzący_nocny	t	f	f	f
+809	24	61	12	3	6	siedzący_nocny	f	f	f	t
+810	24	63	12	4	6	siedzący_nocny	f	f	f	t
+811	24	65	12	5	6	siedzący_nocny	t	f	f	t
+812	24	62	13	3	6	siedzący_nocny	f	f	f	f
+813	24	64	13	4	6	siedzący_nocny	f	f	f	f
+814	24	66	13	5	6	siedzący_nocny	t	f	f	f
+815	24	71	14	3	7	siedzący_nocny	f	f	f	t
+816	24	73	14	4	7	siedzący_nocny	f	f	f	t
+817	24	75	14	5	7	siedzący_nocny	t	f	f	t
+818	24	72	15	3	7	siedzący_nocny	f	f	f	f
+819	24	74	15	4	7	siedzący_nocny	f	f	f	f
+820	24	76	15	5	7	siedzący_nocny	t	f	f	f
+821	25	15	2	1		okno	f	f	f	t
+822	25	11	2	2		korytarz	f	f	f	t
+823	25	13	2	4		środek	f	f	f	t
+824	25	17	3	1		okno	f	f	f	f
+825	25	12	3	2		korytarz	f	f	f	f
+826	25	14	3	4		środek	f	f	f	f
+827	25	25	4	1		okno	f	f	f	t
+828	25	21	4	2		korytarz	f	f	f	t
+829	25	23	4	4		środek	f	f	f	t
+830	25	27	5	1		okno	f	f	f	f
+831	25	22	5	2		korytarz	f	f	f	f
+832	25	24	5	4		środek	f	f	f	f
+833	25	35	6	1		okno	f	f	f	t
+834	25	31	6	2		korytarz	f	f	f	t
+835	25	33	6	4		środek	f	f	f	t
+836	25	37	7	1		okno	f	f	f	f
+837	25	32	7	2		korytarz	f	f	f	f
+838	25	34	7	4		środek	f	f	f	f
+839	25	45	8	1		okno	f	f	f	t
+840	25	41	8	2		korytarz	f	f	f	t
+841	25	43	8	4		środek	f	f	f	t
+842	25	47	9	1		okno	f	f	f	f
+843	25	42	9	2		korytarz	f	f	f	f
+844	25	44	9	4		środek	f	f	f	f
+845	25	55	10	1		okno	f	f	f	t
+846	25	51	10	2		korytarz	f	f	f	t
+847	25	53	10	4		środek	f	f	f	t
+848	25	57	11	1		okno	f	f	f	f
+849	25	52	11	2		korytarz	f	f	f	f
+850	25	54	11	4		środek	f	f	f	f
 \.
 
 COPY pociagi (id_pociagu, nazwa, kategoria) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
@@ -105184,250 +105229,6 @@ COPY postoje (id_trasy, numer_postoju, id_peronu_toru, dzien_przyjazdu_offset, d
 \.
 
 COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejnosci) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
-3132	1088	1	16	1
-3132	1089	1	16	2
-3132	1090	1	16	3
-3132	1091	1	16	4
-3132	1092	1	16	5
-413	1092	3		8
-3132	1093	1	16	6
-413	1093	3		9
-222	1023	1	6	1
-222	1024	1	6	2
-222	1025	1	6	3
-222	1026	1	6	4
-222	1027	1	6	5
-2860	1027	7		6
-222	1028	1	6	6
-2860	1028	7		7
-209	314	1	14	1
-209	315	1	14	2
-209	316	1	14	3
-209	317	1	14	4
-209	318	1	14	5
-2389	318	3		7
-209	319	1	14	6
-2389	319	3		8
-2838	983	1	14	1
-2838	984	1	14	2
-2838	985	1	14	3
-2838	986	1	14	4
-2838	987	1	14	5
-2838	988	1	14	6
-2489	988	7		7
-2838	989	1	14	7
-2489	989	7		8
-1864	790	1	14	1
-1864	791	1	14	2
-1864	792	1	14	3
-1864	793	1	14	4
-1864	794	1	14	5
-684	794	4		8
-1864	795	1	14	6
-684	795	4		9
-339	1309	1	5	1
-339	1310	1	5	2
-339	1311	1	5	3
-339	1312	1	5	4
-339	1313	1	5	5
-2100	1313	4		8
-339	1314	1	5	6
-2100	1314	4		9
-1791	137	1	6	1
-1791	138	1	6	2
-1791	139	1	6	3
-1791	140	1	6	4
-1791	141	1	6	5
-1911	141	12		5
-1791	142	1	6	6
-1911	142	12		6
-2080	1088	1	16	1
-2080	1089	1	16	2
-2080	1090	1	16	3
-2080	1091	1	16	4
-2080	1092	1	16	5
-565	1092	3		7
-2080	1093	1	16	6
-565	1093	3		8
-2008	1510	1	6	1
-2008	1511	1	6	2
-2008	1512	1	6	3
-2008	1513	1	6	4
-2008	1514	1	6	5
-2008	1515	1	6	6
-2938	1515	6		7
-2008	1516	1	6	7
-2938	1516	6		8
-2169	1665	1	9	1
-2169	1666	1	9	2
-2169	1667	1	9	3
-2169	1668	1	9	4
-2169	1669	1	9	5
-2979	1669	7		8
-2169	1670	1	9	6
-2979	1670	7		9
-857	269	1	7	1
-857	270	1	7	2
-857	271	1	7	3
-857	272	1	7	4
-857	273	1	7	5
-1086	273	2		7
-857	274	1	7	6
-1086	274	2		8
-1919	1363	1	17	1
-1919	1364	1	17	2
-1919	1365	1	17	3
-1919	1366	1	17	4
-1919	1367	1	17	5
-3199	1367	7		8
-1919	1368	1	17	6
-3199	1368	7		9
-612	785	1	8	1
-612	786	1	8	2
-612	787	1	8	3
-612	788	1	8	4
-2467	788	3		7
-612	789	1	8	5
-2467	789	3		8
-2943	402	1	7	1
-2943	403	1	7	2
-2943	404	1	7	3
-2943	405	1	7	4
-2519	405	6		6
-2943	406	1	7	5
-2519	406	6		7
-2198	1016	1	10	1
-2198	1017	1	10	2
-2198	1018	1	10	3
-2198	1019	1	10	4
-2198	1020	1	10	5
-2198	1021	1	10	6
-1426	1021	2		7
-2198	1022	1	10	7
-1426	1022	2		8
-678	1258	1	8	1
-678	1259	1	8	2
-678	1260	1	8	3
-678	1261	1	8	4
-678	1262	1	8	5
-1570	1262	9		8
-678	1263	1	8	6
-1570	1263	9		9
-1127	911	1	6	1
-1127	912	1	6	2
-1127	913	1	6	3
-1127	914	1	6	4
-1127	915	1	6	5
-2026	915	4		6
-1127	916	1	6	6
-2026	916	4		7
-2798	449	1	9	1
-2798	450	1	9	2
-2798	451	1	9	3
-2798	452	1	9	4
-2798	453	1	9	5
-1098	453	5		8
-2798	454	1	9	6
-1098	454	5		9
-478	686	1	9	1
-478	687	1	9	2
-478	688	1	9	3
-478	689	1	9	4
-911	689	7		7
-478	690	1	9	5
-911	690	7		8
-1412	768	1	6	1
-1412	769	1	6	2
-1412	770	1	6	3
-1412	771	1	6	4
-1412	772	1	6	5
-1412	773	1	6	6
-633	773	2		8
-1412	774	1	6	7
-633	774	2		9
-2923	2152	1	21	1
-2923	2153	1	21	2
-2923	2154	1	21	3
-2923	2155	1	21	4
-2923	2156	1	21	5
-2923	2157	1	21	6
-2067	2157	4		7
-2923	2158	1	21	7
-2067	2158	4		8
-941	2454	1	21	1
-941	2455	1	21	2
-941	2456	1	21	3
-941	2457	1	21	4
-2146	2457	7		7
-941	2458	1	21	5
-2146	2458	7		8
-931	2436	1	6	1
-931	2437	1	6	2
-931	2438	1	6	3
-931	2439	1	6	4
-931	2440	1	6	5
-1193	2440	4		7
-931	2441	1	6	6
-1193	2441	4		8
-2126	1	1	7	1
-2126	2	1	7	2
-2126	3	1	7	3
-2126	4	1	7	4
-2126	5	1	7	5
-2126	6	1	7	6
-1831	6	10		7
-2126	7	1	7	7
-1831	7	10		8
-3155	2906	1	4	1
-3155	2907	1	4	2
-3155	2908	1	4	3
-3155	2909	1	4	4
-3155	2910	1	4	5
-3155	2911	1	4	6
-56	2911	12		7
-3155	2912	1	4	7
-56	2912	12		8
-754	1653	1	9	1
-754	1654	1	9	2
-754	1655	1	9	3
-754	1656	1	9	4
-754	1657	1	9	5
-754	1658	1	9	6
-986	1658	7		6
-754	1659	1	9	7
-986	1659	7		7
-2354	1688	1	11	1
-2354	1689	1	11	2
-2354	1690	1	11	3
-2354	1691	1	11	4
-2354	1692	1	11	5
-1743	1692	6		6
-2354	1693	1	11	6
-1743	1693	6		7
-270	1159	1	13	1
-270	1160	1	13	2
-270	1161	1	13	3
-270	1162	1	13	4
-270	1163	1	13	5
-270	1164	1	13	6
-1248	1164	3		8
-270	1165	1	13	7
-1248	1165	3		9
-901	1760	1	10	1
-901	1761	1	10	2
-901	1762	1	10	3
-901	1763	1	10	4
-901	1764	1	10	5
-847	1764	5		8
-901	1765	1	10	6
-847	1765	5		9
-1889	627	1	10	1
-1889	628	1	10	2
-1889	629	1	10	3
-1889	630	1	10	4
-3224	630	6		7
-1889	631	1	10	5
-3224	631	6		8
 1	1	1		1
 1	2	1		2
 1	3	1		3
@@ -106652,6 +106453,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 208	974	1		4
 208	975	1		5
 208	976	1		6
+209	314	1		1
+209	315	1		2
+209	316	1		3
+209	317	1		4
+209	318	1		5
+209	319	1		6
 210	894	1		1
 210	895	1		2
 210	896	1		3
@@ -106728,6 +106535,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 221	1020	1		5
 221	1021	1		6
 221	1022	1		7
+222	1023	1		1
+222	1024	1		2
+222	1025	1		3
+222	1026	1		4
+222	1027	1		5
+222	1028	1		6
 223	407	1		1
 223	408	1		2
 223	409	1		3
@@ -107009,6 +106822,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 269	599	1		5
 269	600	1		6
 269	601	1		7
+270	1159	1		1
+270	1160	1		2
+270	1161	1		3
+270	1162	1		4
+270	1163	1		5
+270	1164	1		6
+270	1165	1		7
 271	143	1		1
 271	144	1		2
 271	145	1		3
@@ -107412,6 +107232,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 338	1330	1		4
 338	1331	1		5
 338	1332	1		6
+339	1309	1		1
+339	1310	1		2
+339	1311	1		3
+339	1312	1		4
+339	1313	1		5
+339	1314	1		6
 340	1	1		1
 340	2	1		2
 340	3	1		3
@@ -108236,6 +108062,11 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 477	926	1		3
 477	927	1		4
 477	928	1		5
+478	686	1		1
+478	687	1		2
+478	688	1		3
+478	689	1		4
+478	690	1		5
 479	56	1		1
 479	57	1		2
 479	58	1		3
@@ -109035,6 +108866,11 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 611	730	1		5
 611	731	1		6
 611	732	1		7
+612	785	1		1
+612	786	1		2
+612	787	1		3
+612	788	1		4
+612	789	1		5
 613	847	1		1
 613	848	1		2
 613	849	1		3
@@ -109430,6 +109266,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 677	980	1		4
 677	981	1		5
 677	982	1		6
+678	1258	1		1
+678	1259	1		2
+678	1260	1		3
+678	1261	1		4
+678	1262	1		5
+678	1263	1		6
 679	2099	1		1
 679	2100	1		2
 679	2101	1		3
@@ -109883,6 +109725,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 753	278	1		4
 753	279	1		5
 753	280	1		6
+754	1653	1		1
+754	1654	1		2
+754	1655	1		3
+754	1656	1		4
+754	1657	1		5
+754	1658	1		6
+754	1659	1		7
 755	121	1		1
 755	122	1		2
 755	123	1		3
@@ -110502,6 +110351,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 856	2053	1		3
 856	2054	1		4
 856	2055	1		5
+857	269	1		1
+857	270	1		2
+857	271	1		3
+857	272	1		4
+857	273	1		5
+857	274	1		6
 858	1721	1		1
 858	1722	1		2
 858	1723	1		3
@@ -110753,6 +110608,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 900	233	1		3
 900	234	1		4
 900	235	1		5
+901	1760	1		1
+901	1761	1		2
+901	1762	1		3
+901	1763	1		4
+901	1764	1		5
+901	1765	1		6
 902	378	1		1
 902	379	1		2
 902	380	1		3
@@ -110924,6 +110785,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 930	468	1		4
 930	469	1		5
 930	470	1		6
+931	2436	1		1
+931	2437	1		2
+931	2438	1		3
+931	2439	1		4
+931	2440	1		5
+931	2441	1		6
 932	1035	1		1
 932	1036	1		2
 932	1037	1		3
@@ -110982,6 +110849,11 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 940	5	1		5
 940	6	1		6
 940	7	1		7
+941	2454	1		1
+941	2455	1		2
+941	2456	1		3
+941	2457	1		4
+941	2458	1		5
 942	866	1		1
 942	867	1		2
 942	868	1		3
@@ -112092,6 +111964,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 1126	2109	1		5
 1126	2110	1		6
 1126	2111	1		7
+1127	911	1		1
+1127	912	1		2
+1127	913	1		3
+1127	914	1		4
+1127	915	1		5
+1127	916	1		6
 1128	941	1		1
 1128	942	1		2
 1128	943	1		3
@@ -113809,6 +113687,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 1411	2773	1		3
 1411	2774	1		4
 1411	2775	1		5
+1412	768	1		1
+1412	769	1		2
+1412	770	1		3
+1412	771	1		4
+1412	772	1		5
+1412	773	1		6
+1412	774	1		7
 1413	1863	1		1
 1413	1864	1		2
 1413	1865	1		3
@@ -116074,6 +115959,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 1790	1456	1		5
 1790	1457	1		6
 1790	1458	1		7
+1791	137	1		1
+1791	138	1		2
+1791	139	1		3
+1791	140	1		4
+1791	141	1		5
+1791	142	1		6
 1792	214	1		1
 1792	215	1		2
 1792	216	1		3
@@ -116498,6 +116389,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 1863	2058	1		3
 1863	2059	1		4
 1863	2060	1		5
+1864	790	1		1
+1864	791	1		2
+1864	792	1		3
+1864	793	1		4
+1864	794	1		5
+1864	795	1		6
 1865	2024	1		1
 1865	2025	1		2
 1865	2026	1		3
@@ -116636,6 +116533,11 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 1888	2416	1		3
 1888	2417	1		4
 1888	2418	1		5
+1889	627	1		1
+1889	628	1		2
+1889	629	1		3
+1889	630	1		4
+1889	631	1		5
 1890	2351	1		1
 1890	2352	1		2
 1890	2353	1		3
@@ -116806,6 +116708,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 1918	1208	1		4
 1918	1209	1		5
 1918	1210	1		6
+1919	1363	1		1
+1919	1364	1		2
+1919	1365	1		3
+1919	1366	1		4
+1919	1367	1		5
+1919	1368	1		6
 1920	1	1		1
 1920	2	1		2
 1920	3	1		3
@@ -117326,6 +117234,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2007	2126	1		4
 2007	2127	1		5
 2007	2128	1		6
+2008	1510	1		1
+2008	1511	1		2
+2008	1512	1		3
+2008	1513	1		4
+2008	1514	1		5
+2008	1515	1		6
+2008	1516	1		7
 2009	627	1		1
 2009	628	1		2
 2009	629	1		3
@@ -117749,6 +117664,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2079	994	1		5
 2079	995	1		6
 2079	996	1		7
+2080	1088	1		1
+2080	1089	1		2
+2080	1090	1		3
+2080	1091	1		4
+2080	1092	1		5
+2080	1093	1		6
 2081	1205	1		1
 2081	1206	1		2
 2081	1207	1		3
@@ -118015,6 +117936,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2125	1372	1		4
 2125	1373	1		5
 2125	1374	1		6
+2126	1	1		1
+2126	2	1		2
+2126	3	1		3
+2126	4	1		4
+2126	5	1		5
+2126	6	1		6
+2126	7	1		7
 2127	2567	1		1
 2127	2568	1		2
 2127	2569	1		3
@@ -118272,6 +118200,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2168	933	1		5
 2168	934	1		6
 2168	935	1		7
+2169	1665	1		1
+2169	1666	1		2
+2169	1667	1		3
+2169	1668	1		4
+2169	1669	1		5
+2169	1670	1		6
 2170	2454	1		1
 2170	2455	1		2
 2170	2456	1		3
@@ -118431,6 +118365,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2197	2026	1		3
 2197	2027	1		4
 2197	2028	1		5
+2198	1016	1		1
+2198	1017	1		2
+2198	1018	1		3
+2198	1019	1		4
+2198	1020	1		5
+2198	1021	1		6
+2198	1022	1		7
 2199	2152	1		1
 2199	2153	1		2
 2199	2154	1		3
@@ -119364,6 +119305,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2353	933	1		5
 2353	934	1		6
 2353	935	1		7
+2354	1688	1		1
+2354	1689	1		2
+2354	1690	1		3
+2354	1691	1		4
+2354	1692	1		5
+2354	1693	1		6
 2355	407	1		1
 2355	408	1		2
 2355	409	1		3
@@ -122003,6 +121950,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2797	554	1		3
 2797	555	1		4
 2797	556	1		5
+2798	449	1		1
+2798	450	1		2
+2798	451	1		3
+2798	452	1		4
+2798	453	1		5
+2798	454	1		6
 2799	643	1		1
 2799	644	1		2
 2799	645	1		3
@@ -122232,6 +122185,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2837	2744	1		4
 2837	2745	1		5
 2837	2746	1		6
+2838	983	1		1
+2838	984	1		2
+2838	985	1		3
+2838	986	1		4
+2838	987	1		5
+2838	988	1		6
+2838	989	1		7
 2839	203	1		1
 2839	204	1		2
 2839	205	1		3
@@ -122731,6 +122691,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2922	1781	1		4
 2922	1782	1		5
 2922	1783	1		6
+2923	2152	1		1
+2923	2153	1		2
+2923	2154	1		3
+2923	2155	1		4
+2923	2156	1		5
+2923	2157	1		6
+2923	2158	1		7
 2924	1166	1		1
 2924	1167	1		2
 2924	1168	1		3
@@ -122842,6 +122809,11 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 2942	211	1		3
 2942	212	1		4
 2942	213	1		5
+2943	402	1		1
+2943	403	1		2
+2943	404	1		3
+2943	405	1		4
+2943	406	1		5
 2944	1452	1		1
 2944	1453	1		2
 2944	1454	1		3
@@ -123980,6 +123952,12 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 3131	560	1		4
 3131	561	1		5
 3131	562	1		6
+3132	1088	1		1
+3132	1089	1		2
+3132	1090	1		3
+3132	1091	1		4
+3132	1092	1		5
+3132	1093	1		6
 3133	2169	1		1
 3133	2170	1		2
 3133	2171	1		3
@@ -124114,6 +124092,13 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 3154	1725	1		5
 3154	1726	1		6
 3154	1727	1		7
+3155	2906	1		1
+3155	2907	1		2
+3155	2908	1		3
+3155	2909	1		4
+3155	2910	1		5
+3155	2911	1		6
+3155	2912	1		7
 3156	883	1		1
 3156	884	1		2
 3156	885	1		3
@@ -124821,129 +124806,6 @@ COPY sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejno
 3271	2156	1		5
 3271	2157	1		6
 3271	2158	1		7
-\.
-
-COPY zmiany_skladu (id_zmiany, id_trasy, numer_postoju, id_wagonu, typ_operacji, id_trasy_docelowej, opis) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL '');
-1	3132	16	1092	odlaczenie	413	Odłączenie na postoju 16 → trasa 413
-2	413	3	1092	dolaczenie	3132	Dołączenie z trasy 3132 na postoju 3
-3	3132	16	1093	odlaczenie	413	Odłączenie na postoju 16 → trasa 413
-4	413	3	1093	dolaczenie	3132	Dołączenie z trasy 3132 na postoju 3
-5	222	6	1027	odlaczenie	2860	Odłączenie na postoju 6 → trasa 2860
-6	2860	7	1027	dolaczenie	222	Dołączenie z trasy 222 na postoju 7
-7	222	6	1028	odlaczenie	2860	Odłączenie na postoju 6 → trasa 2860
-8	2860	7	1028	dolaczenie	222	Dołączenie z trasy 222 na postoju 7
-9	209	14	318	odlaczenie	2389	Odłączenie na postoju 14 → trasa 2389
-10	2389	3	318	dolaczenie	209	Dołączenie z trasy 209 na postoju 3
-11	209	14	319	odlaczenie	2389	Odłączenie na postoju 14 → trasa 2389
-12	2389	3	319	dolaczenie	209	Dołączenie z trasy 209 na postoju 3
-13	2838	14	988	odlaczenie	2489	Odłączenie na postoju 14 → trasa 2489
-14	2489	7	988	dolaczenie	2838	Dołączenie z trasy 2838 na postoju 7
-15	2838	14	989	odlaczenie	2489	Odłączenie na postoju 14 → trasa 2489
-16	2489	7	989	dolaczenie	2838	Dołączenie z trasy 2838 na postoju 7
-17	1864	14	794	odlaczenie	684	Odłączenie na postoju 14 → trasa 684
-18	684	4	794	dolaczenie	1864	Dołączenie z trasy 1864 na postoju 4
-19	1864	14	795	odlaczenie	684	Odłączenie na postoju 14 → trasa 684
-20	684	4	795	dolaczenie	1864	Dołączenie z trasy 1864 na postoju 4
-21	339	5	1313	odlaczenie	2100	Odłączenie na postoju 5 → trasa 2100
-22	2100	4	1313	dolaczenie	339	Dołączenie z trasy 339 na postoju 4
-23	339	5	1314	odlaczenie	2100	Odłączenie na postoju 5 → trasa 2100
-24	2100	4	1314	dolaczenie	339	Dołączenie z trasy 339 na postoju 4
-25	1791	6	141	odlaczenie	1911	Odłączenie na postoju 6 → trasa 1911
-26	1911	12	141	dolaczenie	1791	Dołączenie z trasy 1791 na postoju 12
-27	1791	6	142	odlaczenie	1911	Odłączenie na postoju 6 → trasa 1911
-28	1911	12	142	dolaczenie	1791	Dołączenie z trasy 1791 na postoju 12
-29	2080	16	1092	odlaczenie	565	Odłączenie na postoju 16 → trasa 565
-30	565	3	1092	dolaczenie	2080	Dołączenie z trasy 2080 na postoju 3
-31	2080	16	1093	odlaczenie	565	Odłączenie na postoju 16 → trasa 565
-32	565	3	1093	dolaczenie	2080	Dołączenie z trasy 2080 na postoju 3
-33	2008	6	1515	odlaczenie	2938	Odłączenie na postoju 6 → trasa 2938
-34	2938	6	1515	dolaczenie	2008	Dołączenie z trasy 2008 na postoju 6
-35	2008	6	1516	odlaczenie	2938	Odłączenie na postoju 6 → trasa 2938
-36	2938	6	1516	dolaczenie	2008	Dołączenie z trasy 2008 na postoju 6
-37	2169	9	1669	odlaczenie	2979	Odłączenie na postoju 9 → trasa 2979
-38	2979	7	1669	dolaczenie	2169	Dołączenie z trasy 2169 na postoju 7
-39	2169	9	1670	odlaczenie	2979	Odłączenie na postoju 9 → trasa 2979
-40	2979	7	1670	dolaczenie	2169	Dołączenie z trasy 2169 na postoju 7
-41	857	7	273	odlaczenie	1086	Odłączenie na postoju 7 → trasa 1086
-42	1086	2	273	dolaczenie	857	Dołączenie z trasy 857 na postoju 2
-43	857	7	274	odlaczenie	1086	Odłączenie na postoju 7 → trasa 1086
-44	1086	2	274	dolaczenie	857	Dołączenie z trasy 857 na postoju 2
-45	1919	17	1367	odlaczenie	3199	Odłączenie na postoju 17 → trasa 3199
-46	3199	7	1367	dolaczenie	1919	Dołączenie z trasy 1919 na postoju 7
-47	1919	17	1368	odlaczenie	3199	Odłączenie na postoju 17 → trasa 3199
-48	3199	7	1368	dolaczenie	1919	Dołączenie z trasy 1919 na postoju 7
-49	612	8	788	odlaczenie	2467	Odłączenie na postoju 8 → trasa 2467
-50	2467	3	788	dolaczenie	612	Dołączenie z trasy 612 na postoju 3
-51	612	8	789	odlaczenie	2467	Odłączenie na postoju 8 → trasa 2467
-52	2467	3	789	dolaczenie	612	Dołączenie z trasy 612 na postoju 3
-53	2943	7	405	odlaczenie	2519	Odłączenie na postoju 7 → trasa 2519
-54	2519	6	405	dolaczenie	2943	Dołączenie z trasy 2943 na postoju 6
-55	2943	7	406	odlaczenie	2519	Odłączenie na postoju 7 → trasa 2519
-56	2519	6	406	dolaczenie	2943	Dołączenie z trasy 2943 na postoju 6
-57	2198	10	1021	odlaczenie	1426	Odłączenie na postoju 10 → trasa 1426
-58	1426	2	1021	dolaczenie	2198	Dołączenie z trasy 2198 na postoju 2
-59	2198	10	1022	odlaczenie	1426	Odłączenie na postoju 10 → trasa 1426
-60	1426	2	1022	dolaczenie	2198	Dołączenie z trasy 2198 na postoju 2
-61	678	8	1262	odlaczenie	1570	Odłączenie na postoju 8 → trasa 1570
-62	1570	9	1262	dolaczenie	678	Dołączenie z trasy 678 na postoju 9
-63	678	8	1263	odlaczenie	1570	Odłączenie na postoju 8 → trasa 1570
-64	1570	9	1263	dolaczenie	678	Dołączenie z trasy 678 na postoju 9
-65	1127	6	915	odlaczenie	2026	Odłączenie na postoju 6 → trasa 2026
-66	2026	4	915	dolaczenie	1127	Dołączenie z trasy 1127 na postoju 4
-67	1127	6	916	odlaczenie	2026	Odłączenie na postoju 6 → trasa 2026
-68	2026	4	916	dolaczenie	1127	Dołączenie z trasy 1127 na postoju 4
-69	2798	9	453	odlaczenie	1098	Odłączenie na postoju 9 → trasa 1098
-70	1098	5	453	dolaczenie	2798	Dołączenie z trasy 2798 na postoju 5
-71	2798	9	454	odlaczenie	1098	Odłączenie na postoju 9 → trasa 1098
-72	1098	5	454	dolaczenie	2798	Dołączenie z trasy 2798 na postoju 5
-73	478	9	689	odlaczenie	911	Odłączenie na postoju 9 → trasa 911
-74	911	7	689	dolaczenie	478	Dołączenie z trasy 478 na postoju 7
-75	478	9	690	odlaczenie	911	Odłączenie na postoju 9 → trasa 911
-76	911	7	690	dolaczenie	478	Dołączenie z trasy 478 na postoju 7
-77	1412	6	773	odlaczenie	633	Odłączenie na postoju 6 → trasa 633
-78	633	2	773	dolaczenie	1412	Dołączenie z trasy 1412 na postoju 2
-79	1412	6	774	odlaczenie	633	Odłączenie na postoju 6 → trasa 633
-80	633	2	774	dolaczenie	1412	Dołączenie z trasy 1412 na postoju 2
-81	2923	21	2157	odlaczenie	2067	Odłączenie na postoju 21 → trasa 2067
-82	2067	4	2157	dolaczenie	2923	Dołączenie z trasy 2923 na postoju 4
-83	2923	21	2158	odlaczenie	2067	Odłączenie na postoju 21 → trasa 2067
-84	2067	4	2158	dolaczenie	2923	Dołączenie z trasy 2923 na postoju 4
-85	941	21	2457	odlaczenie	2146	Odłączenie na postoju 21 → trasa 2146
-86	2146	7	2457	dolaczenie	941	Dołączenie z trasy 941 na postoju 7
-87	941	21	2458	odlaczenie	2146	Odłączenie na postoju 21 → trasa 2146
-88	2146	7	2458	dolaczenie	941	Dołączenie z trasy 941 na postoju 7
-89	931	6	2440	odlaczenie	1193	Odłączenie na postoju 6 → trasa 1193
-90	1193	4	2440	dolaczenie	931	Dołączenie z trasy 931 na postoju 4
-91	931	6	2441	odlaczenie	1193	Odłączenie na postoju 6 → trasa 1193
-92	1193	4	2441	dolaczenie	931	Dołączenie z trasy 931 na postoju 4
-93	2126	7	6	odlaczenie	1831	Odłączenie na postoju 7 → trasa 1831
-94	1831	10	6	dolaczenie	2126	Dołączenie z trasy 2126 na postoju 10
-95	2126	7	7	odlaczenie	1831	Odłączenie na postoju 7 → trasa 1831
-96	1831	10	7	dolaczenie	2126	Dołączenie z trasy 2126 na postoju 10
-97	3155	4	2911	odlaczenie	56	Odłączenie na postoju 4 → trasa 56
-98	56	12	2911	dolaczenie	3155	Dołączenie z trasy 3155 na postoju 12
-99	3155	4	2912	odlaczenie	56	Odłączenie na postoju 4 → trasa 56
-100	56	12	2912	dolaczenie	3155	Dołączenie z trasy 3155 na postoju 12
-101	754	9	1658	odlaczenie	986	Odłączenie na postoju 9 → trasa 986
-102	986	7	1658	dolaczenie	754	Dołączenie z trasy 754 na postoju 7
-103	754	9	1659	odlaczenie	986	Odłączenie na postoju 9 → trasa 986
-104	986	7	1659	dolaczenie	754	Dołączenie z trasy 754 na postoju 7
-105	2354	11	1692	odlaczenie	1743	Odłączenie na postoju 11 → trasa 1743
-106	1743	6	1692	dolaczenie	2354	Dołączenie z trasy 2354 na postoju 6
-107	2354	11	1693	odlaczenie	1743	Odłączenie na postoju 11 → trasa 1743
-108	1743	6	1693	dolaczenie	2354	Dołączenie z trasy 2354 na postoju 6
-109	270	13	1164	odlaczenie	1248	Odłączenie na postoju 13 → trasa 1248
-110	1248	3	1164	dolaczenie	270	Dołączenie z trasy 270 na postoju 3
-111	270	13	1165	odlaczenie	1248	Odłączenie na postoju 13 → trasa 1248
-112	1248	3	1165	dolaczenie	270	Dołączenie z trasy 270 na postoju 3
-113	901	10	1764	odlaczenie	847	Odłączenie na postoju 10 → trasa 847
-114	847	5	1764	dolaczenie	901	Dołączenie z trasy 901 na postoju 5
-115	901	10	1765	odlaczenie	847	Odłączenie na postoju 10 → trasa 847
-116	847	5	1765	dolaczenie	901	Dołączenie z trasy 901 na postoju 5
-117	1889	10	630	odlaczenie	3224	Odłączenie na postoju 10 → trasa 3224
-118	3224	6	630	dolaczenie	1889	Dołączenie z trasy 1889 na postoju 6
-119	1889	10	631	odlaczenie	3224	Odłączenie na postoju 10 → trasa 3224
-120	3224	6	631	dolaczenie	1889	Dołączenie z trasy 1889 na postoju 6
 \.
 
 COMMIT;
