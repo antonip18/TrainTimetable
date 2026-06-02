@@ -1,7 +1,3 @@
--- =============================================================================
--- USUWANIE TRIGGERÓW I SEKWENCJI (przed drop.sql lub przed ponownym triggery.sql)
--- =============================================================================
-
 DROP TRIGGER IF EXISTS trg_waliduj_ostatni_postoj ON postoje;
 DROP TRIGGER IF EXISTS trg_waliduj_date_przejazdu ON przejazdy;
 DROP TRIGGER IF EXISTS trg_blokuj_cykliczna_gdy_przejazdy ON trasy_cykliczne;

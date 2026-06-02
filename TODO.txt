@@ -1,0 +1,7 @@
+Edycja przystanków na trasie w panelu admina - tabela historii zmian.
+
+Poprawić triggery:
+Ten z północą.
+Na tym samym peronie i torze o tej samej porze mógł stać tylko jeden pociąg.
+
+Możliwość wyszukiwania tras z udogodnieniami - np. dla niepełnosprawnych.

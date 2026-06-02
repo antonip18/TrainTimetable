@@ -1,12 +1,3 @@
-"""
-Trasy (endpointy) aplikacji webowej.
-
-Ten plik zawiera:
-- wyszukiwarkę połączeń kolejowych (algorytm Dijkstry),
-- strony ze szczegółami tras,
-- panel administratora do dodawania i usuwania tras.
-"""
-
 from flask import render_template, request, abort, jsonify, redirect, flash
 from models import db, Stacja, Postoj, Trasa, Pociag, InfrastrukturaStacji, Przejazd, TrasaCykliczna
 from models import Sklad, Wagon, TypWagonu, ElementStaly, Miejsce, SkladSegment
@@ -18,14 +9,12 @@ import itertools
 
 
 def time_to_minutes(t):
-    """Zamienia obiekt datetime.time na liczbę minut od północy (np. 08:30 -> 510)."""
     if t is None:
         return 0
     return t.hour * 60 + t.minute
 
 
 def parse_time_string(czas_str):
-    """Zamienia tekst z formularza HTML (np. '08:30') na obiekt datetime.time."""
     if not czas_str:
         return None
     try:
@@ -36,11 +25,6 @@ def parse_time_string(czas_str):
 
 
 def przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd):
-    """
-    Dopasowuje godziny do reguł bazy danych (trigger trg_waliduj_postoj):
-    - pierwsza stacja: tylko odjazd (bez przyjazdu)
-    - ostatnia stacja: tylko przyjazd (bez odjazdu)
-    """
     przyjazd = list(godz_przyjazd)
     odjazd = list(godz_odjazd)
     if przyjazd:
@@ -51,27 +35,21 @@ def przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd):
 
 
 def dopasuj_listy_postojow(n, godz_przyjazd, godz_odjazd):
-    """
-    Naprawia problem z brakującymi godzinami (zablokowane pola HTML).
-    Jeśli brakuje 1 elementu w przyjazdach, przeglądarka pominęła pierwszą stację.
-    Jeśli brakuje 1 elementu w odjazdach, pominęła ostatnią.
-    """
     przyjazd = list(godz_przyjazd)
     if len(przyjazd) == n - 1:
-        przyjazd.insert(0, '')  # Wstawiamy puste na start!
+        przyjazd.insert(0, '')
     elif len(przyjazd) < n:
         przyjazd += [''] * (n - len(przyjazd))
         
     odjazd = list(godz_odjazd)
     if len(odjazd) == n - 1:
-        odjazd.append('')  # Wstawiamy puste na koniec!
+        odjazd.append('')
     elif len(odjazd) < n:
         odjazd += [''] * (n - len(odjazd))
         
     return przyjazd[:n], odjazd[:n]
 
 def zapisz_postoje_dla_trasy(id_trasy, kierunek):
-    """Zapisuje listę postojów dla jednej trasy (kierunek tam lub powrót)."""
     id_infra = request.form.getlist(f'id_infra_{kierunek}[]')
     n = len(id_infra)
     
@@ -93,7 +71,6 @@ def zapisz_postoje_dla_trasy(id_trasy, kierunek):
 
 
 def waliduj_dane_nowej_trasy():
-    """Sprawdza kompletność formularza admina przed zapisem do bazy."""
     bledy = []
 
     if not request.form.get('nazwa_trasy_tam') or not request.form.get('nazwa_trasy_powrot'):
@@ -125,7 +102,6 @@ def waliduj_dane_nowej_trasy():
             if not daty:
                 bledy.append(f'Kierunek {etykieta}: dodaj co najmniej jedną datę kursowania.')
 
-    # Jawna walidacja unikalności nazw pociągów jeszcze przed próbą INSERT.
     num_tam = (request.form.get('numer_pociagu_tam') or '').strip()
     num_powrot = (request.form.get('numer_pociagu_powrot') or '').strip()
     kandydaci = []
@@ -149,7 +125,6 @@ def waliduj_dane_nowej_trasy():
 
 
 def czytelny_komunikat_bledu(wyjatek):
-    """Wyciąga prosty komunikat z błędu PostgreSQL (łatwiejszy do zrozumienia)."""
     import re
     msg = str(wyjatek)
     msg_db = str(getattr(wyjatek, 'orig', wyjatek))
@@ -166,7 +141,6 @@ def czytelny_komunikat_bledu(wyjatek):
 
 
 def zapisz_sklad_dla_pociagu(id_pociagu, id_typu_wagonu_list):
-    """Tworzy wagony i przypisuje je do pociągu (osobny wagon na każdy wpis w składzie)."""
     for idx, id_typu in enumerate(id_typu_wagonu_list):
         if not id_typu:
             continue
@@ -181,7 +155,6 @@ def zapisz_sklad_dla_pociagu(id_pociagu, id_typu_wagonu_list):
 
 
 def zapisz_segmenty_skladu_dla_trasy(id_trasy, id_pociagu):
-    """Pełny skład na trasie (bez odłączeń) – jeden segment na wagon od postoju 1 do końca."""
     sklady = db.session.query(Sklad).\
         filter_by(id_pociagu=id_pociagu).\
         order_by(Sklad.numer_kolejnosci).all()
@@ -196,17 +169,10 @@ def zapisz_segmenty_skladu_dla_trasy(id_trasy, id_pociagu):
 
 
 def pobierz_wagony_do_listy_admin():
-    """
-    Pobiera wagony do wyświetlenia w panelu admina.
-
-    Dla każdego wagonu sprawdzamy też, czy jest w składzie pociągu (tabela sklady).
-    Wagon w użyciu nie może zostać usunięty – naruszyłoby to spójność bazy.
-    """
     wiersze = db.session.query(Wagon, TypWagonu).\
         join(TypWagonu, Wagon.id_typu == TypWagonu.id_typu).\
         order_by(Wagon.id_wagonu.desc()).all()
 
-    # Pobieramy powiązania zbiorczo (bez N+1 query dla każdego wagonu).
     sklady_rows = db.session.query(Sklad.id_wagonu, Pociag.nazwa).\
         join(Pociag, Sklad.id_pociagu == Pociag.id_pociagu).all()
     nazwy_pociagow_po_wagonie = {}
@@ -244,7 +210,6 @@ def format_minutes(m):
     return f"{minutes}m"
 
 def _id_pociagu_dla_trasy(id_trasy, data_podrozy_obj=None):
-    """Zwraca id pociągu: z trasy, przejazdu jednorazowego lub harmonogramu cyklicznego."""
     trasa = db.session.get(Trasa, id_trasy)
     if trasa and trasa.id_pociagu:
         return trasa.id_pociagu
@@ -259,7 +224,6 @@ def _id_pociagu_dla_trasy(id_trasy, data_podrozy_obj=None):
 
 
 def get_pociag_info(id_trasy, data_podrozy_obj=None):
-    """Pobiera kategorię i nazwę pociągu przypisanego do trasy."""
     id_pociagu = _id_pociagu_dla_trasy(id_trasy, data_podrozy_obj)
     if id_pociagu:
         p = db.session.get(Pociag, id_pociagu)
@@ -269,7 +233,6 @@ def get_pociag_info(id_trasy, data_podrozy_obj=None):
 
 
 def _numer_postoju_dla_stacji(id_trasy, id_stacji, prefer_max=False):
-    """Mapuje stację na numer postoju na trasie."""
     q = db.session.query(Postoj.numer_postoju).\
         join(InfrastrukturaStacji, Postoj.id_peronu_toru == InfrastrukturaStacji.id).\
         filter(Postoj.id_trasy == id_trasy, InfrastrukturaStacji.id_stacji == id_stacji).\
@@ -279,15 +242,10 @@ def _numer_postoju_dla_stacji(id_trasy, id_stacji, prefer_max=False):
 
 
 def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None, od_postoju=None, do_postoju=None):
-    """
-    Buduje listę wagonów ze schematem miejsc.
-    Założenie: Wagony jadą od początku do końca (brak odklejeń na trasie).
-    """
     id_pociagu = _id_pociagu_dla_trasy(id_trasy, data_podrozy_obj)
     if not id_pociagu:
         return []
 
-    # Proste pobranie segmentów składu - nie analizujemy odłączeń
     segmenty = db.session.query(SkladSegment, Wagon, TypWagonu).\
         join(Wagon, SkladSegment.id_wagonu == Wagon.id_wagonu).\
         join(TypWagonu, Wagon.id_typu == TypWagonu.id_typu).\
@@ -330,18 +288,15 @@ def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None, od_postoju=None, do_po
             'liczba_kolumn': typ.liczba_kolumn,
             'elementy': elementy,
             'miejsca': miejsca,
-            'odlaczony': False,   # Zabezpieczenie dla frontendu, żeby uniknąć KeyErrors (zakładamy zawsze False)
+            'odlaczony': False,
             'do_postoju': None,
         })
     return wyniki_wagonow
 
 
 def register_routes(app):
-    """Rejestruje trasy widoczne dla użytkownika końcowego (wyszukiwarka + szczegóły)."""
-
     @app.route('/szczegoly/direct/<int:id_trasy>', methods=['GET', 'POST'])
     def szczegoly_direct(id_trasy):
-        """Strona szczegółów połączenia bezpośredniego (bez przesiadek)."""
         trasa = db.session.get(Trasa, id_trasy)
         if not trasa:
             abort(404)
@@ -372,7 +327,7 @@ def register_routes(app):
             czy_gmina_jest = r.nazwa_gminy is not None
             harmonogram.append({
                 'numer': r.numer_postoju,
-                'ma_zmiane_skladu': False,  # Usunięto logikę odklejeń
+                'ma_zmiane_skladu': False,
                 'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
                 'peron': r.numer_peronu if r.numer_peronu is not None else "-",
                 'tor': r.numer_toru if r.numer_toru is not None else "-",
@@ -399,17 +354,12 @@ def register_routes(app):
 
     @app.route('/')
     def index():
-        """Strona główna z formularzem wyszukiwania połączeń."""
         wszystkie_stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         domyslna_data = datetime.date.today().strftime('%Y-%m-%d')
         return render_template('uzytkownik_index.html', stacje=wszystkie_stacje, domyslna_data=domyslna_data)
 
     @app.route('/szukaj', methods=['POST', 'GET'])
     def szukaj():
-        """
-        Wyszukuje połączenia między dwiema stacjami.
-        Używa algorytmu Dijkstry z limitem maks. 2 przesiadek.
-        """
         src = request.form if request.method == 'POST' else request.args
         start_id = src.get('stacja_start')
         koniec_id = src.get('stacja_koniec')
@@ -467,10 +417,6 @@ def register_routes(app):
             trasy_map[r.id_trasy]['stops'].append(r)
 
         def rozwiazanie_optymalne_dijkstra():
-            """
-            Szuka najlepszych połączeń grafem stacji.
-            Każda krawędź grafu to odcinek między dwoma kolejnymi postojami tej samej trasy.
-            """
             graph = defaultdict(list)
             tie_breaker = itertools.count()
             
@@ -527,7 +473,7 @@ def register_routes(app):
 
                 for edge in graph[u]:
                     if edge['to'] == start_id:
-                        continue  # Nigdy nie wracamy na stację startową
+                        continue
 
                     cycle = False
                     for leg in path:
@@ -574,7 +520,6 @@ def register_routes(app):
             return mapuj_na_szablony(znalezione_polaczenia)
             
         def mapuj_na_szablony(surowe_trasy):
-            """Formatuje wyniki algorytmu do struktury zrozumiałej dla szablonu HTML."""
             gotowe = []
             for arr_min, trans, dep_min, path in surowe_trasy:
                 total_minutes = arr_min - dep_min
@@ -633,7 +578,6 @@ def register_routes(app):
 
     @app.route('/szczegoly/transfer/<int:id1>/<int:id2>', methods=['GET', 'POST'])
     def szczegoly_transfer(id1, id2):
-        """Strona szczegółów połączenia z jedną przesiadką."""
         trasa1 = db.session.get(Trasa, id1)
         trasa2 = db.session.get(Trasa, id2)
         if not trasa1 or not trasa2:
@@ -733,7 +677,6 @@ def register_routes(app):
 
     @app.route('/szczegoly/transfer2/<int:id1>/<int:id2>/<int:id3>', methods=['GET', 'POST'])
     def szczegoly_transfer2(id1, id2, id3):
-        """Strona szczegółów połączenia z dwiema przesiadkami."""
         trasa1 = db.session.get(Trasa, id1)
         trasa2 = db.session.get(Trasa, id2)
         trasa3 = db.session.get(Trasa, id3)
@@ -819,19 +762,15 @@ def register_routes(app):
                             data=data_podrozy)
     
 def register_admin(app):
-    """Rejestruje trasy panelu administratora (dodawanie, edycja, usuwanie tras)."""
 
     @app.route('/admin')
     def admin_index():
-        """Strona główna panelu administratora."""
         return render_template('admin_index.html')
 
     @app.route('/admin/trasa/nowa', methods=['GET', 'POST'])
     def admin_nowa_trasa():
-        """Formularz tworzenia nowej trasy dwukierunkowej wraz z pociągiem i składem."""
 
         def zapisz_harmonogram_kierunkowy(id_trasy, id_pociagu, typ_kursowania, kierunek):
-            """Zapisuje harmonogram: albo cykliczny (dni tygodnia), albo jednorazowy (daty)."""
             if typ_kursowania == 'cykliczna':
                 dni = request.form.getlist(f'dni_{kierunek}[]')
                 for dzien in dni:
@@ -846,7 +785,6 @@ def register_admin(app):
                         db.session.add(przejazd)
 
         if request.method == 'POST':
-            # Czyścimy ewentualny stan transakcji z poprzednich błędnych żądań.
             db.session.rollback()
             bledy_walidacji = waliduj_dane_nowej_trasy()
             if bledy_walidacji:
@@ -918,18 +856,11 @@ def register_admin(app):
     
     @app.route('/admin/trasa/od_do', methods=['GET'])
     def admin_trasa_od_do():
-        """Wyszukiwarka tras do edycji lub usunięcia."""
         stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         return render_template('admin_trasy_lista.html', stacje=stacje)
 
     @app.route('/admin/wagony', methods=['GET', 'POST'])
     def admin_wagony():
-        """
-        Panel dodawania i usuwania wagonów.
-
-        Wagon (tabela wagony) = konkretny pojazd utworzony z szablonu (typy_wagonow).
-        Usunąć można tylko wagon, który nie jest w składzie żadnego pociągu.
-        """
         if request.method == 'POST':
             akcja = request.form.get('akcja')
 
@@ -986,10 +917,6 @@ def register_admin(app):
 
     @app.route('/api/infrastruktura/<int:id_stacji>')
     def api_infrastruktura(id_stacji):
-        """
-        API zwracające perony i tory dla wybranej stacji.
-        Używane przez JavaScript w formularzu dodawania nowej trasy.
-        """
         infrastruktura = db.session.query(InfrastrukturaStacji).filter_by(id_stacji=id_stacji).all()
         return jsonify([
             {
@@ -1002,7 +929,6 @@ def register_admin(app):
     
     @app.route('/api/trasy/od_do', methods=['GET'])
     def api_trasy_od_do():
-        """API zwracające trasy przejeżdżające między dwiema stacjami."""
         start_id = request.args.get('start', type=int)
         end_id = request.args.get('end', type=int)
 

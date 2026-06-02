@@ -1,9 +1,3 @@
-"""
-Prosty skrypt testowy – sprawdza połączenie z bazą i działanie triggerów.
-
-Uruchomienie: python test_db.py
-"""
-
 from app import app
 from models import db, Trasa, Pociag, Wagon, Postoj, TrasaCykliczna, Przejazd
 from sqlalchemy import text
@@ -11,7 +5,6 @@ import datetime
 
 
 def testuj_polaczenie():
-    """Wykonuje proste zapytania SQL, żeby potwierdzić działanie połączenia."""
     try:
         with app.app_context():
             db.session.execute(text("SELECT 1"))
@@ -25,12 +18,7 @@ def testuj_polaczenie():
 
 
 def testuj_triggery():
-    """
-    Sprawdza, czy triggery w bazie działają poprawnie.
-    Każdy test kończy się rollback() – nic nie zostaje zapisane na stałe.
-    """
     with app.app_context():
-        # --- Test 1: auto-ID trasy ---
         try:
             trasa = Trasa(nazwa_trasy="TEST_TRIGGER_AUTO_ID")
             db.session.add(trasa)
@@ -42,12 +30,10 @@ def testuj_triggery():
             db.session.rollback()
             print("BŁĄD triggera auto-ID:", e)
 
-        # --- Test 2: pierwszy postój nie może mieć przyjazdu ---
         try:
             trasa = Trasa(nazwa_trasy="TEST_POSTOJ")
             db.session.add(trasa)
             db.session.flush()
-            # id_peronu_toru=1 istnieje w bazie (stacja Lotnisko Modlin)
             zly_postoj = Postoj(
                 id_trasy=trasa.id_trasy,
                 numer_postoju=1,
@@ -66,7 +52,6 @@ def testuj_triggery():
             else:
                 print("BŁĄD triggera postoju:", e)
 
-        # --- Test 3: harmonogram cykliczny vs jednorazowy ---
         try:
             trasa = db.session.query(Trasa).first()
             if not trasa:
@@ -91,7 +76,6 @@ def testuj_triggery():
             else:
                 print("BŁĄD triggera harmonogramu:", e)
 
-        # --- Test 4: lista aktywnych triggerów w bazie ---
         wynik = db.session.execute(text(
             "SELECT tgname FROM pg_trigger WHERE NOT tgisinternal ORDER BY tgname"
         )).fetchall()
