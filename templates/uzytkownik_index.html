@@ -40,6 +40,32 @@
                 <label>Godzina odjazdu (od):</label>
                 <input type="time" name="godzina" value="00:00" required>
             </div>
+
+            <div class="search-filters">
+                <label class="filter-option">
+                    <input type="checkbox" name="miejsce_prm" value="1" {% if request.values.get('miejsce_prm') == '1' %}checked{% endif %}>
+                    Wymagane miejsce dla niepełnosprawnych (PRM)
+                </label>
+
+                <label class="filter-option">
+                    <input type="checkbox" name="miejsce_rower" value="1" {% if request.values.get('miejsce_rower') == '1' %}checked{% endif %}>
+                    Wymagane miejsce na rower
+                </label>
+
+                <label class="filter-option">
+                    Minimalny czas na przesiadkę (min):
+                    <input type="number" name="min_przesiadka" value="{{ request.values.get('min_przesiadka', 5) }}" min="0">
+                </label>
+
+                <label class="filter-option">
+                    Maksymalna liczba przesiadek:
+                    <select name="max_przesiadki">
+                        <option value="0" {% if request.values.get('max_przesiadki') == '0' %}selected{% endif %}>Bez przesiadek (0)</option>
+                        <option value="1" {% if request.values.get('max_przesiadki') == '1' %}selected{% endif %}>Maksymalnie 1</option>
+                        <option value="2" {% if request.values.get('max_przesiadki', '2') == '2' %}selected{% endif %}>Maksymalnie 2</option>
+                    </select>
+                </label>
+            </div>
             
             <button type="submit">Szukaj</button>
         </form>

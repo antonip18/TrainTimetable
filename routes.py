@@ -361,6 +361,12 @@ def register_routes(app):
     @app.route('/szukaj', methods=['POST', 'GET'])
     def szukaj():
         src = request.form if request.method == 'POST' else request.args
+        
+        wymaga_prm = src.get('miejsce_prm') == '1'
+        wymaga_rower = src.get('miejsce_rower') == '1'
+        min_przesiadka = src.get('min_przesiadka', default=5, type=int)
+        max_przesiadki = src.get('max_przesiadki', default=2, type=int)
+
         start_id = src.get('stacja_start')
         koniec_id = src.get('stacja_koniec')
         data_podrozy = src.get('data')
@@ -416,11 +422,34 @@ def register_routes(app):
                 trasy_map[r.id_trasy] = {'nazwa': r.nazwa_trasy, 'stops': []}
             trasy_map[r.id_trasy]['stops'].append(r)
 
+        # Funkcja pomocnicza do walidacji cech taboru dla danej trasy
+        def czy_trasa_spelnia_wymagania_taboru(tid):
+            if not wymaga_prm and not wymaga_rower:
+                return True
+            
+            wagony = get_wagony_dla_trasy(tid, base_date)
+            ma_prm = False
+            ma_rower = False
+            
+            for w in wagony:
+                for m in w.get('miejsca', []):
+                    if m.get('prm'):
+                        ma_prm = True
+                    if m.get('rower'):
+                        ma_rower = True
+                    if (not wymaga_prm or ma_prm) and (not wymaga_rower or ma_rower):
+                        return True
+            return False
+
         def rozwiazanie_optymalne_dijkstra():
             graph = defaultdict(list)
             tie_breaker = itertools.count()
             
             for tid, tinfo in trasy_map.items():
+                # Walidacja filtra wyposażenia pociągu (PRM / Rower)
+                if not czy_trasa_spelnia_wymagania_taboru(tid):
+                    continue
+
                 stops = tinfo['stops']
                 for i in range(len(stops) - 1):
                     u = stops[i]
@@ -460,7 +489,9 @@ def register_routes(app):
 
             while pq:
                 arr_min, trans, dep_min_start, u, curr_route, _, path = heapq.heappop(pq)
-                if trans > 2:
+                
+                # Walidacja filtra maksymalnej liczby przesiadek wpisanej przez użytkownika
+                if trans > max_przesiadki:
                     continue
 
                 if is_dominated(u, arr_min, trans, dep_min_start):
@@ -486,12 +517,14 @@ def register_routes(app):
                     is_transfer = (edge['route_id'] != curr_route)
                     next_trans = trans + (1 if is_transfer else 0)
 
-                    if next_trans > 2:
+                    # Sprawdzenie limitu przesiadek przed dodaniem do kolejki
+                    if next_trans > max_przesiadki:
                         continue
 
                     if is_transfer:
                         wait_time = edge['dep_min'] - arr_min
-                        if not (5 <= wait_time <= 240):
+                        # Zastosowanie dynamicznej wartości filtra min_przesiadka dostarczonej z formularza
+                        if not (min_przesiadka <= wait_time <= 240):
                             continue
                     else:
                         if edge['dep_min'] < arr_min:
