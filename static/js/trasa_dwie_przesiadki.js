@@ -4,6 +4,17 @@ function renderWagon(wagon, gridId, titleId) {
     
     title.textContent = `Wagon nr ${wagon.id_wagonu} - ${wagon.nazwa}`;
     
+    const wrapper = grid.parentElement;
+    if (wrapper) {
+        if (wagon.status === 'odczepiany') {
+            wrapper.style.backgroundColor = '#fecaca';
+        } else if (wagon.status === 'doczepiany') {
+            wrapper.style.backgroundColor = '#bbf7d0';
+        } else {
+            wrapper.style.backgroundColor = '#f3f4f6';
+        }
+    }
+    
     grid.style.gridTemplateColumns = `repeat(${wagon.liczba_rzedow}, 40px)`;
     grid.style.gridTemplateRows = `repeat(${wagon.liczba_kolumn}, 40px)`;
     grid.innerHTML = '';
@@ -52,9 +63,61 @@ function initTrainInstance(bridgeId, tabsId, gridId, titleId) {
         const btn = document.createElement('button');
         btn.className = `wagon-tab ${index === 0 ? 'active' : ''}`;
         btn.textContent = `Wagon ${wagon.id_wagonu}`;
+        
+        function stylizujPrzycisk(isActive) {
+            if (isActive) {
+                if (wagon.status === 'odczepiany') {
+                    btn.style.backgroundColor = '#dc2626';
+                    btn.style.borderColor = '#dc2626';
+                    btn.style.color = '#ffffff';
+                } else if (wagon.status === 'doczepiany') {
+                    btn.style.backgroundColor = '#16a34a'
+                    btn.style.borderColor = '#16a34a';
+                    btn.style.color = '#ffffff';
+                } else {
+                    btn.style.backgroundColor = '#2b6cff';
+                    btn.style.borderColor = '#2b6cff';
+                    btn.style.color = '#ffffff';
+                }
+            } else {
+                if (wagon.status === 'odczepiany') {
+                    btn.style.backgroundColor = '#fee2e2';
+                    btn.style.borderColor = '#ef4444';
+                    btn.style.color = '#991b1b';
+                } else if (wagon.status === 'doczepiany') {
+                    btn.style.backgroundColor = '#dcfce7';
+                    btn.style.borderColor = '#22c55e';
+                    btn.style.color = '#166534';
+                } else {
+                    btn.style.backgroundColor = '#fafafa';
+                    btn.style.borderColor = '#e5e7eb';
+                    btn.style.color = '#111827';
+                }
+            }
+        }
+
+        stylizujPrzycisk(index === 0);
+
         btn.onclick = () => {
-            tabsContainer.querySelectorAll('.wagon-tab').forEach(b => b.classList.remove('active'));
+            tabsContainer.querySelectorAll('.wagon-tab').forEach((b, i) => {
+                b.classList.remove('active');
+                const w = trainData[i];
+                if (w.status === 'odczepiany') {
+                    b.style.backgroundColor = '#fee2e2';
+                    b.style.borderColor = '#ef4444';
+                    b.style.color = '#991b1b';
+                } else if (w.status === 'doczepiany') {
+                    b.style.backgroundColor = '#dcfce7';
+                    b.style.borderColor = '#22c55e';
+                    b.style.color = '#166534';
+                } else {
+                    b.style.backgroundColor = '#fafafa';
+                    b.style.borderColor = '#e5e7eb';
+                    b.style.color = '#111827';
+                }
+            });
             btn.classList.add('active');
+            stylizujPrzycisk(true);
             renderWagon(wagon, gridId, titleId);
         };
         tabsContainer.appendChild(btn);

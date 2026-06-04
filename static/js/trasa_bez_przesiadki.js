@@ -9,6 +9,17 @@ function renderWagon(wagon) {
     
     title.textContent = `Wagon nr ${wagon.id_wagonu} - ${wagon.nazwa}`;
     
+    const wrapper = grid.parentElement;
+    if (wrapper) {
+        if (wagon.status === 'odczepiany') {
+            wrapper.style.backgroundColor = '#fecaca';
+        } else if (wagon.status === 'doczepiany') {
+            wrapper.style.backgroundColor = '#bbf7d0';
+        } else {
+            wrapper.style.backgroundColor = '#f3f4f6';
+        }
+    }
+    
     grid.style.gridTemplateColumns = `repeat(${wagon.liczba_rzedow}, 40px)`;
     grid.style.gridTemplateRows = `repeat(${wagon.liczba_kolumn}, 40px)`;
     grid.innerHTML = '';
@@ -56,9 +67,32 @@ function initTrainView() {
         const btn = document.createElement('button');
         btn.className = `wagon-tab ${index === 0 ? 'active' : ''}`;
         btn.textContent = `Wagon ${wagon.id_wagonu}`;
+
+        function applyBtnStyle(isActive) {
+            const isOd = wagon.status === 'odczepiany';
+            const isDo = wagon.status === 'doczepiany';
+            if (isActive) {
+                btn.style.backgroundColor = isOd ? '#dc2626' : isDo ? '#16a34a' : '#2b6cff';
+                btn.style.color = '#ffffff';
+            } else {
+                btn.style.backgroundColor = isOd ? '#fee2e2' : isDo ? '#dcfce7' : '#fafafa';
+                btn.style.color = isOd ? '#991b1b' : isDo ? '#166534' : '#111827';
+            }
+        }
+
+        applyBtnStyle(index === 0);
+
         btn.onclick = () => {
-            document.querySelectorAll('.wagon-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.wagon-tab').forEach((b, i) => {
+                b.classList.remove('active');
+                const w = trainData[i];
+                const isOd = w.status === 'odczepiany';
+                const isDo = w.status === 'doczepiany';
+                b.style.backgroundColor = isOd ? '#fee2e2' : isDo ? '#dcfce7' : '#fafafa';
+                b.style.color = isOd ? '#991b1b' : isDo ? '#166534' : '#111827';
+            });
             btn.classList.add('active');
+            applyBtnStyle(true);
             renderWagon(wagon);
         };
         tabsContainer.appendChild(btn);
