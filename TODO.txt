@@ -1,7 +1,10 @@
-Edycja przystanków na trasie w panelu admina - tabela historii zmian.
+Dodanie opcji edycji przystanków w trybie edycji trasy admina.
+Dotycząca tego tabela historii zmian.
 
 Poprawić triggery:
-Ten z północą.
+Ten z północą - zeby szukal pociagow ktore jezdza przez polnoc.
 Na tym samym peronie i torze o tej samej porze mógł stać tylko jeden pociąg.
+Zeby trasa powrotna byla symetryczna i sie autogenerowała.
+Zwiększenie sensu ustawiania dni tygodnia w momencie tworzenia trasy.
 
 Możliwość wyszukiwania tras z udogodnieniami - np. dla niepełnosprawnych.
