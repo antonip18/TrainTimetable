@@ -271,3 +271,84 @@ CREATE TRIGGER trg_aaa_nadaj_numer_postoju
     FOR EACH ROW
     EXECUTE PROCEDURE fn_nadaj_numer_postoju();
 
+
+
+
+CREATE OR REPLACE FUNCTION minuty_od_dnia_startu_dla_przyjazdu(
+    p_dzien_przyjazdu_offset INTEGER,
+    p_godzina_przyjazdu TIME,
+    p_dzien_odjazdu_offset INTEGER,
+    p_godzina_odjazdu TIME
+)
+RETURNS INTEGER
+AS $$
+BEGIN
+    RETURN COALESCE(p_dzien_przyjazdu_offset, p_dzien_odjazdu_offset) * 1440
+         + EXTRACT(EPOCH FROM COALESCE(p_godzina_przyjazdu, p_godzina_odjazdu))::INTEGER / 60
+         + (CASE WHEN p_godzina_przyjazdu IS NULL THEN -4 ELSE 0 END); 
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION minuty_od_dnia_startu_dla_odjazdu(
+    p_dzien_przyjazdu_offset INTEGER,
+    p_godzina_przyjazdu TIME,
+    p_dzien_odjazdu_offset INTEGER,
+    p_godzina_odjazdu TIME
+)
+RETURNS INTEGER
+AS $$
+BEGIN
+    RETURN COALESCE(p_dzien_odjazdu_offset, p_dzien_przyjazdu_offset) * 1440
+         + EXTRACT(EPOCH FROM COALESCE(p_godzina_odjazdu, p_godzina_przyjazdu))::INTEGER / 60
+         + (CASE WHEN p_godzina_przyjazdu IS NULL THEN 4 ELSE 0 END); 
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION poprawnosc_peronu()
+RETURNS TRIGGER AS $$
+DECLARE
+    przyjazd INTEGER;
+    odjazd INTEGER;
+    id_trasy_konfliktowej INTEGER;
+BEGIN
+    przyjazd := minuty_od_dnia_startu_dla_przyjazdu(
+        NEW.dzien_przyjazdu_offset, NEW.godzina_przyjazdu,
+        NEW.dzien_odjazdu_offset, NEW.godzina_odjazdu
+    );
+    odjazd := minuty_od_dnia_startu_dla_odjazdu(
+        NEW.dzien_przyjazdu_offset, NEW.godzina_przyjazdu,
+        NEW.dzien_odjazdu_offset, NEW.godzina_odjazdu
+    );
+
+    SELECT p.id_trasy INTO id_trasy_konfliktowej
+    FROM postoje p
+    JOIN przejazdy pr ON p.id_trasy = pr.id_trasy
+    JOIN PRZEJAZDY pr_new ON pr_new.id_trasy = NEW.id_trasy
+    WHERE p.id_peronu_toru = NEW.id_peronu_toru 
+      AND p.id_trasy != NEW.id_trasy
+      AND (
+          (pr.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_przyjazdu(p.dzien_przyjazdu_offset, p.godzina_przyjazdu, p.dzien_odjazdu_offset, p.godzina_odjazdu) * interval '1 minute')
+          <= 
+          (pr_new.data_przejazdu::timestamp + odjazd * interval '1 minute')
+      )
+      AND (
+          (pr.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_odjazdu(p.dzien_przyjazdu_offset, p.godzina_przyjazdu, p.dzien_odjazdu_offset, p.godzina_odjazdu) * interval '1 minute')
+          >= 
+          (pr_new.data_przejazdu::timestamp + przyjazd * interval '1 minute')
+      )
+    LIMIT 1;
+
+    IF id_trasy_konfliktowej IS NOT NULL THEN
+        RAISE EXCEPTION 'Konflikt na peronie/torze! Nowy postój pokrywa się czasowo z trasą nr %.', id_trasy_konfliktowej;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER poprawnosc_peronu
+BEFORE INSERT OR UPDATE ON postoje
+FOR EACH ROW
+EXECUTE FUNCTION poprawnosc_peronu();
