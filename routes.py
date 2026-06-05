@@ -977,3 +977,131 @@ def register_admin(app):
             db.session.rollback()
             flash(f"Wystąpił błąd: {str(e)}", "danger")
             return redirect('/admin/trasa/od_do')
+        
+    @app.route('/api/mozliwe_przepiecia')
+    def api_mozliwe_przepiecia():
+        id_trasy = request.args.get('id_trasy', type=int)
+        id_stacji = request.args.get('id_stacji', type=int)
+        
+        if not id_trasy or not id_stacji:
+            return jsonify({'wagony': [], 'trasy_docelowe': []})
+
+        query_zrodlo = text("""
+            SELECT p.godzina_przyjazdu, p.numer_postoju 
+            FROM POSTOJE p
+            JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+            WHERE p.id_trasy = :id_trasy AND i.id_stacji = :id_stacji
+        """)
+        zrodlo = db.session.execute(query_zrodlo, {'id_trasy': id_trasy, 'id_stacji': id_stacji}).first()
+        
+        if not zrodlo or not zrodlo.godzina_przyjazdu:
+            return jsonify({'wagony': [], 'trasy_docelowe': []})
+
+        query_wagony = text("""
+            SELECT w.id_wagonu, tw.nazwa
+            FROM SKLADY_SEGMENTY ss
+            JOIN WAGONY w ON ss.id_wagonu = w.id_wagonu
+            JOIN TYPY_WAGONOW tw ON w.id_typu = tw.id_typu
+            WHERE ss.id_trasy = :id_trasy 
+              AND ss.od_postoju <= :postoj
+              AND (ss.do_postoju IS NULL OR ss.do_postoju > :postoj)
+        """)
+        wagony = db.session.execute(query_wagony, {'id_trasy': id_trasy, 'postoj': zrodlo.numer_postoju}).fetchall()
+        wagony_list = [{'id': w.id_wagonu, 'nazwa': f"Wagon #{w.id_wagonu} ({w.nazwa})"} for w in wagony]
+
+        przyjazd_minuty = time_to_minutes(zrodlo.godzina_przyjazdu)
+
+        query_cele = text("""
+            SELECT p.id_trasy, t.nazwa_trasy, p.godzina_odjazdu
+            FROM POSTOJE p
+            JOIN TRASY t ON p.id_trasy = t.id_trasy
+            JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+            WHERE i.id_stacji = :id_stacji AND p.id_trasy != :id_trasy
+              AND p.godzina_odjazdu IS NOT NULL
+        """)
+        cele = db.session.execute(query_cele, {'id_stacji': id_stacji, 'id_trasy': id_trasy}).fetchall()
+        
+        trasy_docelowe = []
+        for c in cele:
+            odjazd_minuty = time_to_minutes(c.godzina_odjazdu)
+            roznica = odjazd_minuty - przyjazd_minuty
+            
+            if roznica < 0:
+                roznica += 1440
+                
+            if 20 <= roznica <= 40:
+                trasy_docelowe.append({
+                    'id': c.id_trasy,
+                    'nazwa': f"{c.nazwa_trasy} (Odjazd: {c.godzina_odjazdu.strftime('%H:%M')})"
+                })
+
+        return jsonify({'wagony': wagony_list, 'trasy_docelowe': trasy_docelowe})
+
+    @app.route('/admin/przepinanie_wagonow', methods=['GET', 'POST'])
+    def admin_przepinanie_wagonow():
+        if request.method == 'POST':
+            id_trasy_zrodlowej = request.form.get('id_trasy_zrodlowej', type=int)
+            id_trasy_docelowej = request.form.get('id_trasy_docelowej', type=int)
+            id_stacji = request.form.get('id_stacji', type=int)
+            id_wagonu = request.form.get('id_wagonu', type=int)
+
+            if not all([id_trasy_zrodlowej, id_trasy_docelowej, id_stacji, id_wagonu]):
+                flash("Wypełnij wszystkie pola formularza.", "danger")
+                return redirect('/admin/przepinanie_wagonow')
+
+            try:
+                postoj_zrodlo = db.session.execute(text("""
+                    SELECT p.numer_postoju FROM POSTOJE p 
+                    JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id 
+                    WHERE p.id_trasy = :t AND i.id_stacji = :s
+                """), {'t': id_trasy_zrodlowej, 's': id_stacji}).first()
+
+                postoj_cel = db.session.execute(text("""
+                    SELECT p.numer_postoju FROM POSTOJE p 
+                    JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id 
+                    WHERE p.id_trasy = :t AND i.id_stacji = :s
+                """), {'t': id_trasy_docelowej, 's': id_stacji}).first()
+
+                if not postoj_zrodlo or not postoj_cel:
+                    flash("Błąd konfiguracji postojów.", "danger")
+                    return redirect('/admin/przepinanie_wagonow')
+
+                num_postoj_zrodlo = postoj_zrodlo[0]
+                num_postoj_cel = postoj_cel[0]
+
+                db.session.execute(text("""
+                    UPDATE SKLADY_SEGMENTY 
+                    SET do_postoju = :nowy_do
+                    WHERE id_trasy = :id_t AND id_wagonu = :id_w AND od_postoju <= :nowy_do 
+                      AND (do_postoju IS NULL OR do_postoju > :nowy_do)
+                """), {'nowy_do': num_postoj_zrodlo, 'id_t': id_trasy_zrodlowej, 'id_w': id_wagonu})
+
+                max_kol = db.session.execute(text("SELECT COALESCE(MAX(numer_kolejnosci), 0) FROM SKLADY_SEGMENTY WHERE id_trasy = :id_t"), {'id_t': id_trasy_docelowej}).scalar()
+                
+                db.session.execute(text("""
+                    INSERT INTO SKLADY_SEGMENTY (id_trasy, id_wagonu, od_postoju, numer_kolejnosci)
+                    VALUES (:id_t, :id_w, :od_p, :kol)
+                """), {'id_t': id_trasy_docelowej, 'id_w': id_wagonu, 'od_p': num_postoj_cel, 'kol': max_kol + 1})
+
+                db.session.execute(text("""
+                    INSERT INTO ZMIANY_SKLADU (id_trasy, numer_postoju, id_wagonu, typ_operacji, id_trasy_docelowej, opis)
+                    VALUES (:id_tz, :np, :id_w, 'ODPIĘCIE', :id_tc, 'Przepięcie manewrowe')
+                """), {'id_tz': id_trasy_zrodlowej, 'np': num_postoj_zrodlo, 'id_w': id_wagonu, 'id_tc': id_trasy_docelowej})
+
+                db.session.execute(text("""
+                    INSERT INTO ZMIANY_SKLADU (id_trasy, numer_postoju, id_wagonu, typ_operacji, opis)
+                    VALUES (:id_tc, :npc, :id_w, 'PRZYPIĘCIE', 'Przyjęto z innej trasy')
+                """), {'id_tc': id_trasy_docelowej, 'npc': num_postoj_cel, 'id_w': id_wagonu})
+
+                db.session.commit()
+                flash("Pomyślnie odpięto i przypięto wagon do nowej trasy!", "success")
+            
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Wystąpił błąd bazy danych: {str(e)}", "danger")
+            
+            return redirect('/admin/przepinanie_wagonow')
+
+        stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
+        trasy = db.session.query(Trasa).order_by(Trasa.nazwa_trasy).all()
+        return render_template('admin_przepinanie_wagonow.html', stacje=stacje, trasy=trasy)

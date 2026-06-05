@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Przepinanie Wagonów</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_nowa_trasa_style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <a href="/admin" class="btn btn-secondary" style="margin-bottom: 20px;">&larr; Wróć do panelu</a>
+        <h2>Zarządzanie przepinaniem wagonów (Manewry)</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div style="padding: 15px; border-radius: 4px; background-color: {% if category == 'success' %}#dff0d8{% else %}#f2dede{% endif %}; color: {% if category == 'success' %}#3c763d{% else %}#a94442{% endif %};">
+                    <strong>Informacja:</strong> {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="sekcja">
+            <p style="color:#64748b; margin-bottom: 20px;">
+                Wybierz stację oraz trasę, z której chcesz odpiąć wagon. System automatycznie znajdzie wagony dostępne na tej stacji oraz wyświetli tylko te trasy docelowe, których odjazd następuje za <strong>20 do 40 minut</strong> od przyjazdu pociągu źródłowego.
+            </p>
+            
+            <form action="/admin/przepinanie_wagonow" method="POST">
+                <div class="grid-2">
+                    <div>
+                        <label>Wybierz stację manewrową:</label>
+                        <select name="id_stacji" id="id_stacji" onchange="zaladujOpcje()" required>
+                            <option value="">-- Wybierz stację --</option>
+                            {% for s in stacje %}
+                                <option value="{{ s.id_stacji }}">{{ s.nazwa_stacji }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Trasa źródłowa (z której odpinamy):</label>
+                        <select name="id_trasy_zrodlowej" id="id_trasy_zrodlowej" onchange="zaladujOpcje()" required>
+                            <option value="">-- Wybierz trasę --</option>
+                            {% for t in trasy %}
+                                <option value="{{ t.id_trasy }}">{{ t.nazwa_trasy }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top: 20px;">
+                    <div>
+                        <label>Odpinany wagon:</label>
+                        <select name="id_wagonu" id="id_wagonu" required>
+                            <option value="">-- Najpierw wybierz stację i trasę źródłową --</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Trasa docelowa (do której przypinamy):</label>
+                        <select name="id_trasy_docelowej" id="id_trasy_docelowej" required>
+                            <option value="">-- Brak tras spełniających okno 20-40 min --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" style="background: #eab308; color: black; font-size: 16px; width: 100%; padding: 15px; border-radius: 8px; margin-top: 30px;">
+                    ZATWIERDŹ PRZEPIĘCIE WAGONU
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function zaladujOpcje() {
+            const stacjaId = document.getElementById('id_stacji').value;
+            const trasaZrodloId = document.getElementById('id_trasy_zrodlowej').value;
+            
+            const wagonySelect = document.getElementById('id_wagonu');
+            const trasyCelSelect = document.getElementById('id_trasy_docelowej');
+
+            wagonySelect.innerHTML = '<option value="">-- Ładowanie... --</option>';
+            trasyCelSelect.innerHTML = '<option value="">-- Ładowanie... --</option>';
+
+            if (!stacjaId || !trasaZrodloId) {
+                wagonySelect.innerHTML = '<option value="">-- Najpierw wybierz stację i trasę źródłową --</option>';
+                trasyCelSelect.innerHTML = '<option value="">-- Najpierw wybierz stację i trasę źródłową --</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/mozliwe_przepiecia?id_trasy=${trasaZrodloId}&id_stacji=${stacjaId}`);
+                const data = await response.json();
+
+                wagonySelect.innerHTML = '';
+                if (data.wagony.length === 0) {
+                    wagonySelect.innerHTML = '<option value="">-- Ten pociąg nie ma tu postoju lub wagonów --</option>';
+                } else {
+                    data.wagony.forEach(w => {
+                        wagonySelect.innerHTML += `<option value="${w.id}">${w.nazwa}</option>`;
+                    });
+                }
+
+                trasyCelSelect.innerHTML = '';
+                if (data.trasy_docelowe.length === 0) {
+                    trasyCelSelect.innerHTML = '<option value="">-- Brak odjazdów za 20-40 minut! --</option>';
+                } else {
+                    data.trasy_docelowe.forEach(t => {
+                        trasyCelSelect.innerHTML += `<option value="${t.id}">${t.nazwa}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error("Błąd sieci", error);
+            }
+        }
+    </script>
+</body>
+</html>
