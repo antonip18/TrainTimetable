@@ -17,3 +17,6 @@ drop table STACJE cascade;
 drop table GMINY cascade;
 drop table POWIATY cascade;
 drop table WOJEWODZTWA cascade;
+drop sequence seq_trasy;
+drop sequence seq_pociagi;
+drop sequence seq_wagony;

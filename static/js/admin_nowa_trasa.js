@@ -83,9 +83,13 @@ function godziny() {
         const inpOdjazd = wiersz.querySelector('.inp-odjazd');
 
         if (index === 0 && inpPrzyjazd) {
+            inpPrzyjazd.disabled = true;
+            inpOdjazd.disabled = false;
             inpPrzyjazd.title = 'Pierwsza stacja – wpisz tylko godzinę odjazdu';
         }
         if (index === wiersze.length - 1 && inpOdjazd) {
+            inpOdjazd.disabled = true;
+            inpPrzyjazd.disabled = false;
             inpOdjazd.title = 'Ostatnia stacja – wpisz tylko godzinę przyjazdu';
         }
     });

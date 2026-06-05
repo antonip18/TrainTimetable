@@ -156,3 +156,15 @@ CREATE INDEX idx_postoje_id_peronu_toru ON POSTOJE(id_peronu_toru);
 CREATE INDEX idx_infra_id_stacji ON INFRASTRUKTURA_STACJI(id_stacji);
 CREATE INDEX idx_przejazdy_trasa_data ON PRZEJAZDY(id_trasy, data_przejazdu);
 CREATE INDEX idx_trasy_cykl_id_dzien ON TRASY_CYKLICZNE(id_trasy, dzien_kursowania);
+
+CREATE SEQUENCE seq_trasy;
+CREATE SEQUENCE seq_pociagi;
+CREATE SEQUENCE seq_wagony;
+SELECT setval('seq_trasy', (SELECT MAX(id_trasy) FROM trasy))
+WHERE EXISTS (SELECT 1 FROM trasy LIMIT 1);
+
+SELECT setval('seq_pociagi', (SELECT MAX(id_pociagu) FROM pociagi))
+WHERE EXISTS (SELECT 1 FROM pociagi LIMIT 1);
+
+SELECT setval('seq_wagony', (SELECT MAX(id_wagonu) FROM wagony))
+WHERE EXISTS (SELECT 1 FROM wagony LIMIT 1);

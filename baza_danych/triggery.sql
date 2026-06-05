@@ -1,15 +1,3 @@
-CREATE SEQUENCE IF NOT EXISTS seq_trasy;
-CREATE SEQUENCE IF NOT EXISTS seq_pociagi;
-CREATE SEQUENCE IF NOT EXISTS seq_wagony;
-SELECT setval('seq_trasy', (SELECT MAX(id_trasy) FROM trasy))
-WHERE EXISTS (SELECT 1 FROM trasy LIMIT 1);
-
-SELECT setval('seq_pociagi', (SELECT MAX(id_pociagu) FROM pociagi))
-WHERE EXISTS (SELECT 1 FROM pociagi LIMIT 1);
-
-SELECT setval('seq_wagony', (SELECT MAX(id_wagonu) FROM wagony))
-WHERE EXISTS (SELECT 1 FROM wagony LIMIT 1);
-
 CREATE OR REPLACE FUNCTION fn_nadaj_id_trasy()
 RETURNS TRIGGER AS $$
 BEGIN

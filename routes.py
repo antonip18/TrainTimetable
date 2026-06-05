@@ -61,13 +61,36 @@ def zapisz_postoje_dla_trasy(id_trasy):
     )
     godz_przyjazd, godz_odjazd = przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd)
 
+    current_day_offset = 0
+    prev_odj_time = None
+
     for idx, (infra_id, g_prz, g_odj) in enumerate(zip(id_infra, godz_przyjazd, godz_odjazd)):
+        prz_time = parse_time_string(g_prz)
+        odj_time = parse_time_string(g_odj)
+        
+        if idx > 0 and prz_time is not None and prev_odj_time is not None:
+            if prz_time < prev_odj_time:
+                current_day_offset += 1
+                
+        p_offset = current_day_offset
+        
+        if prz_time is not None and odj_time is not None:
+            if odj_time < prz_time:
+                current_day_offset += 1
+                
+        o_offset = current_day_offset
+        
+        if odj_time is not None:
+            prev_odj_time = odj_time
+
         db.session.add(Postoj(
             id_trasy=id_trasy,
             numer_postoju=idx + 1,
             id_peronu_toru=int(infra_id),
-            godzina_przyjazdu=parse_time_string(g_prz),
-            godzina_odjazdu=parse_time_string(g_odj),
+            godzina_przyjazdu=prz_time,
+            godzina_odjazdu=odj_time,
+            dzien_przyjazdu_offset=p_offset,
+            dzien_odjazdu_offset=o_offset
         ))
 
 
@@ -104,8 +127,9 @@ def waliduj_dane_nowej_trasy():
 
     num_pociagu = (request.form.get('numer_pociagu') or '').strip()
     kandydaci = []
-    if nazwa_wspolna and num_pociagu:
-        kandydaci.append(f"{nazwa_wspolna} {num_pociagu}")
+    if nazwa_wspolna:
+        pelna_nazwa = f"{nazwa_wspolna} {num_pociagu}".strip() if num_pociagu else nazwa_wspolna
+        kandydaci.append(pelna_nazwa)
 
     if kandydaci:
         with db.session.no_autoflush:
@@ -127,13 +151,21 @@ def czytelny_komunikat_bledu(wyjatek):
     msg_db = str(getattr(wyjatek, 'orig', wyjatek))
     zrodlo = msg_db if msg_db and msg_db != msg else msg
 
-    dopasowanie = re.search(r'BŁĄD:\s*(.+?)(?:\n|CONTEXT:)', zrodlo)
+    dopasowanie = re.search(r'(?:BŁĄD|ERROR):\s*(.+?)(?:\n|CONTEXT:)', zrodlo, re.IGNORECASE)
     if dopasowanie:
-        return dopasowanie.group(1).strip()
+        tekst_bledu = dopasowanie.group(1).strip()
+        if 'unique' in tekst_bledu.lower() and not ('pociag' in tekst_bledu.lower() or 'pociagi' in tekst_bledu.lower()):
+            return f"Błąd unikalności danych: {tekst_bledu}"
+        return tekst_bledu
+
     if 'query-invoked autoflush' in msg.lower():
         return msg_db.split('\n')[0][:200]
-    if 'unique' in zrodlo.lower() or 'UNIQUE' in zrodlo:
-        return 'Pociąg o takiej nazwie już istnieje w bazie – wybierz inny numer.'
+
+    if 'unique' in zrodlo.lower():
+        if 'pociag' in zrodlo.lower() and 'nazwa' in zrodlo.lower():
+            return 'Pociąg o takiej nazwie już istnieje w bazie – wybierz inny numer.'
+        return f'Naruszenie unikalności: {zrodlo.split("\n")[0][:200]}'
+
     return zrodlo.split('\n')[0][:200]
 
 
@@ -319,6 +351,7 @@ def get_sliced_stops(id_trasy, start_stacja_id, end_stacja_id):
     query = text("""
         SELECT 
             p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu,
+            p.dzien_przyjazdu_offset, p.dzien_odjazdu_offset,
             i.numer_peronu, i.numer_toru, s.id_stacji, s.nazwa_stacji,
             s.szerokosc_geograficzna, s.dlugosc_geograficzna,
             g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa
@@ -340,13 +373,17 @@ def get_sliced_stops(id_trasy, start_stacja_id, end_stacja_id):
             recording = True
         if recording:
             czy_gmina_jest = r.nazwa_gminy is not None
+            
+            prz_offset = f" (+{r.dzien_przyjazdu_offset}d)" if getattr(r, 'dzien_przyjazdu_offset', 0) > 0 else ""
+            odj_offset = f" (+{r.dzien_odjazdu_offset}d)" if getattr(r, 'dzien_odjazdu_offset', 0) > 0 else ""
+
             res.append({
                 'numer': r.numer_postoju,
                 'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
                 'peron': r.numer_peronu if r.numer_peronu is not None else "-",
                 'tor': r.numer_toru if r.numer_toru is not None else "-",
-                'przyjazd': r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else 'Początek',
-                'odjazd': r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else 'Koniec',
+                'przyjazd': (r.godzina_przyjazdu.strftime('%H:%M') + prz_offset) if r.godzina_przyjazdu else 'Początek',
+                'odjazd': (r.godzina_odjazdu.strftime('%H:%M') + odj_offset) if r.godzina_odjazdu else 'Koniec',
                 'lat': r.szerokosc_geograficzna, 'lon': r.dlugosc_geograficzna,
                 'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
                 'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
@@ -374,6 +411,7 @@ def register_routes(app):
         query = text("""
             SELECT 
                 p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu,
+                p.dzien_przyjazdu_offset, p.dzien_odjazdu_offset,
                 i.numer_peronu, i.numer_toru, s.nazwa_stacji,
                 s.szerokosc_geograficzna, s.dlugosc_geograficzna,
                 g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa
@@ -391,14 +429,17 @@ def register_routes(app):
         harmonogram = []
         for r in postoje_rows:
             czy_gmina_jest = r.nazwa_gminy is not None
+            prz_offset = f" (+{r.dzien_przyjazdu_offset}d)" if getattr(r, 'dzien_przyjazdu_offset', 0) > 0 else ""
+            odj_offset = f" (+{r.dzien_odjazdu_offset}d)" if getattr(r, 'dzien_odjazdu_offset', 0) > 0 else ""
+
             harmonogram.append({
                 'numer': r.numer_postoju,
                 'ma_zmiane_skladu': False,
                 'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
                 'peron': r.numer_peronu if r.numer_peronu is not None else "-",
                 'tor': r.numer_toru if r.numer_toru is not None else "-",
-                'przyjazd': r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else 'Początek',
-                'odjazd': r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else 'Koniec',
+                'przyjazd': (r.godzina_przyjazdu.strftime('%H:%M') + prz_offset) if r.godzina_przyjazdu else 'Początek',
+                'odjazd': (r.godzina_odjazdu.strftime('%H:%M') + odj_offset) if r.godzina_odjazdu else 'Koniec',
                 'lat': r.szerokosc_geograficzna, 'lon': r.dlugosc_geograficzna,
                 'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
                 'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
@@ -773,7 +814,7 @@ def register_admin(app):
                 
                 db.session.commit()
                 flash('Trasa została pomyślnie utworzona!', 'success')
-                return redirect('/admin')
+                return redirect('/admin/trasa/nowa')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Wystąpił błąd podczas dodawania trasy: {czytelny_komunikat_bledu(e)}', 'danger')
@@ -987,7 +1028,7 @@ def register_admin(app):
             return jsonify({'wagony': [], 'trasy_docelowe': []})
 
         query_zrodlo = text("""
-            SELECT p.godzina_przyjazdu, p.numer_postoju 
+            SELECT p.godzina_przyjazdu, p.numer_postoju, p.dzien_przyjazdu_offset 
             FROM POSTOJE p
             JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
             WHERE p.id_trasy = :id_trasy AND i.id_stacji = :id_stacji
@@ -1009,10 +1050,11 @@ def register_admin(app):
         wagony = db.session.execute(query_wagony, {'id_trasy': id_trasy, 'postoj': zrodlo.numer_postoju}).fetchall()
         wagony_list = [{'id': w.id_wagonu, 'nazwa': f"Wagon #{w.id_wagonu} ({w.nazwa})"} for w in wagony]
 
-        przyjazd_minuty = time_to_minutes(zrodlo.godzina_przyjazdu)
+        p_offset_zrodlo = getattr(zrodlo, 'dzien_przyjazdu_offset', 0) or 0
+        przyjazd_minuty = time_to_minutes(zrodlo.godzina_przyjazdu) + (p_offset_zrodlo * 1440)
 
         query_cele = text("""
-            SELECT p.id_trasy, t.nazwa_trasy, p.godzina_odjazdu
+            SELECT p.id_trasy, t.nazwa_trasy, p.godzina_odjazdu, p.dzien_odjazdu_offset
             FROM POSTOJE p
             JOIN TRASY t ON p.id_trasy = t.id_trasy
             JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
@@ -1023,10 +1065,12 @@ def register_admin(app):
         
         trasy_docelowe = []
         for c in cele:
-            odjazd_minuty = time_to_minutes(c.godzina_odjazdu)
+            o_offset_cel = getattr(c, 'dzien_odjazdu_offset', 0) or 0
+            odjazd_minuty = time_to_minutes(c.godzina_odjazdu) + (o_offset_cel * 1440)
+            
             roznica = odjazd_minuty - przyjazd_minuty
             
-            if roznica < 0:
+            if roznica < 0 and roznica > -1200:
                 roznica += 1440
                 
             if 20 <= roznica <= 40:
