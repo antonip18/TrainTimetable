@@ -1,3 +1,5 @@
+DROP TABLE ZMIANY_SKLADU cascade;
+DROP TYPE TYP_OPERACJI_SKLADU CASCADE;
 drop table sklady_segmenty cascade;
 drop table postoje cascade;
 drop table TRASY_CYKLICZNE cascade;
