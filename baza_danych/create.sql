@@ -137,6 +137,19 @@ CREATE TABLE SKLADY_SEGMENTY (
     FOREIGN KEY (id_trasy, do_postoju) REFERENCES POSTOJE(id_trasy, numer_postoju)
 );
 
+CREATE TYPE TYP_OPERACJI_SKLADU AS ENUM ('ODPIĘCIE', 'PRZYPIĘCIE');
+
+CREATE TABLE ZMIANY_SKLADU (
+    id_zmiany SERIAL PRIMARY KEY,
+    id_trasy INTEGER NOT NULL REFERENCES TRASY(id_trasy),
+    numer_postoju INTEGER NOT NULL,
+    id_wagonu INTEGER NOT NULL REFERENCES WAGONY(id_wagonu),
+    typ_operacji TYP_OPERACJI_SKLADU NOT NULL,
+    id_trasy_docelowej INTEGER REFERENCES TRASY(id_trasy),
+    opis VARCHAR(200),
+    FOREIGN KEY (id_trasy, numer_postoju) REFERENCES POSTOJE(id_trasy, numer_postoju)
+);
+
 CREATE INDEX idx_postoje_id_trasy ON POSTOJE(id_trasy);
 CREATE INDEX idx_sklady_segmenty_trasa ON SKLADY_SEGMENTY(id_trasy);
 CREATE INDEX idx_postoje_id_peronu_toru ON POSTOJE(id_peronu_toru);
