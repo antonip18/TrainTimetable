@@ -4,46 +4,48 @@ zaMiesiac.setDate(dzis.getDate() + 30);
 const minDataStr = dzis.toISOString().split('T')[0];
 const maxDataStr = zaMiesiac.toISOString().split('T')[0];
 
-function toggleHarmonogram(kierunek, typ) {
-    document.getElementById(`dni_tygodnia_div_${kierunek}`).style.display = typ === 'cykliczna' ? 'block' : 'none';
-    document.getElementById(`konkretne_daty_div_${kierunek}`).style.display = typ === 'daty' ? 'block' : 'none';
+function toggleHarmonogram(typ) {
+    document.getElementById('dni_tygodnia_div').style.display = typ === 'cykliczna' ? 'block' : 'none';
+    document.getElementById('konkretne_daty_div').style.display = typ === 'daty' ? 'block' : 'none';
 
     if (typ === 'cykliczna') {
-        document.getElementById(`daty_lista_${kierunek}`).innerHTML = '';
+        document.getElementById('daty_lista').innerHTML = '';
     } else {
-        dodajDate(kierunek);
+        if (document.getElementById('daty_lista').children.length === 0) {
+            dodajDate();
+        }
     }
 }
 
-function dodajDate(kierunek, domyslnaWartosc = '') {
-    const container = document.getElementById(`daty_lista_${kierunek}`);
+function dodajDate(domyslnaWartosc = '') {
+    const container = document.getElementById('daty_lista');
     const div = document.createElement('div');
     div.className = 'date-item';
     div.innerHTML = `
-        <input type="date" name="konkretne_daty_${kierunek}[]" min="${minDataStr}" max="${maxDataStr}" value="${domyslnaWartosc}" required>
+        <input type="date" name="konkretne_daty[]" min="${minDataStr}" max="${maxDataStr}" value="${domyslnaWartosc}" required>
         <button type="button" class="btn btn-danger" style="padding: 10px 14px;" onclick="this.closest('div').remove()">Usuń</button>
     `;
     container.appendChild(div);
 }
 
-function dodajPostoj(kierunek) {
-    const tbody = document.getElementById(`postoje_tbody_${kierunek}`);
+function dodajPostoj() {
+    const tbody = document.getElementById('postoje_tbody');
     const row = document.createElement('tr');
 
     row.innerHTML = `
         <td>
-            <select name="id_stacji_${kierunek}[]" required onchange="pobierzInfrastrukture(this, '${kierunek}')">
+            <select name="id_stacji[]" required onchange="pobierzInfrastrukture(this)">
                 ${window.AppConfig.stacjeOptions}
             </select>
         </td>
         <td>
-            <select name="id_infra_${kierunek}[]" class="infra-select" required>
+            <select name="id_infra[]" class="infra-select" required>
                 <option value="">Najpierw wybierz stację</option>
             </select>
         </td>
-        <td><input type="time" name="godz_przyjazd_${kierunek}[]" class="inp-przyjazd"></td>
-        <td><input type="time" name="godz_odjazd_${kierunek}[]" class="inp-odjazd"></td>
-        <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this, '${kierunek}')">Usuń</button></td>
+        <td><input type="time" name="godz_przyjazd[]" class="inp-przyjazd"></td>
+        <td><input type="time" name="godz_odjazd[]" class="inp-odjazd"></td>
+        <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button></td>
     `;
 
     if (tbody.children.length >= 2) {
@@ -51,44 +53,51 @@ function dodajPostoj(kierunek) {
     } else {
         tbody.appendChild(row);
     }
+    
+    przyciskiUsuwania();
+    godziny();
 }
 
-function przyciskiUsuwania(kierunek) {
-    const wiersze = document.querySelectorAll(`#postoje_tbody_${kierunek} tr`);
+function przyciskiUsuwania() {
+    const wiersze = document.querySelectorAll('#postoje_tbody tr');
     wiersze.forEach((wiersz, index) => {
         const btnUsun = wiersz.querySelector('.btn-usun-postoj');
-        if (index === 0 || index === wiersze.length - 1) {
-            btnUsun.disabled = true;
-            btnUsun.style.opacity = "0.4";
-            btnUsun.style.cursor = "not-allowed";
-        } else {
-            btnUsun.disabled = false;
-            btnUsun.style.opacity = "1";
-            btnUsun.style.cursor = "pointer";
+        if (btnUsun) {
+            if (index === 0 || index === wiersze.length - 1) {
+                btnUsun.disabled = true;
+                btnUsun.style.opacity = "0.4";
+                btnUsun.style.cursor = "not-allowed";
+            } else {
+                btnUsun.disabled = false;
+                btnUsun.style.opacity = "1";
+                btnUsun.style.cursor = "pointer";
+            }
         }
     });
 }
 
-function godziny(kierunek) {
-    const wiersze = document.querySelectorAll(`#postoje_tbody_${kierunek} tr`);
+function godziny() {
+    const wiersze = document.querySelectorAll('#postoje_tbody tr');
     wiersze.forEach((wiersz, index) => {
         const inpPrzyjazd = wiersz.querySelector('.inp-przyjazd');
         const inpOdjazd = wiersz.querySelector('.inp-odjazd');
 
-        if (index === 0) {
+        if (index === 0 && inpPrzyjazd) {
             inpPrzyjazd.title = 'Pierwsza stacja – wpisz tylko godzinę odjazdu';
         }
-        if (index === wiersze.length - 1) {
+        if (index === wiersze.length - 1 && inpOdjazd) {
             inpOdjazd.title = 'Ostatnia stacja – wpisz tylko godzinę przyjazdu';
         }
     });
 }
 
-function usunPostoj(btn, kierunek) {
+function usunPostoj(btn) {
     btn.closest('tr').remove();
+    przyciskiUsuwania();
+    godziny();
 }
 
-async function pobierzInfrastrukture(selectElement, kierunek, selectedValue = null) {
+async function pobierzInfrastrukture(selectElement, selectedValue = null) {
     const stacjaId = selectElement.value;
     const tr = selectElement.closest('tr');
     const infraSelect = tr.querySelector('.infra-select');
@@ -140,12 +149,10 @@ function przygotujFormularzDoWyslania() {
         inp.readOnly = false;
     });
 
-    ['tam', 'powrot'].forEach(kierunek => {
-        const typDaty = document.querySelector(`input[name="typ_kursowania_${kierunek}"]:checked`);
-        if (typDaty && typDaty.value === 'cykliczna') {
-            document.getElementById(`daty_lista_${kierunek}`).innerHTML = '';
-        }
-    });
+    const typDaty = document.querySelector('input[name="typ_kursowania"]:checked');
+    if (typDaty && typDaty.value === 'cykliczna') {
+        document.getElementById('daty_lista').innerHTML = '';
+    }
 
     return true;
 }
@@ -161,28 +168,24 @@ window.onload = async function() {
         form.addEventListener('submit', przygotujFormularzDoWyslania);
     }
 
-    const kierunki = ['tam', 'powrot'];
-    for (const kierunek of kierunki) {
-        const maStareDane = (kierunek === 'tam') ? window.AppConfig.maStareDaneTam : window.AppConfig.maStareDanePowrot;
-        if (!maStareDane) {
-            dodajPostoj(kierunek);
-            dodajPostoj(kierunek);
-        } else {
-            const wiersze = document.querySelectorAll(`#postoje_tbody_${kierunek} tr`);
-            for (let tr of wiersze) {
-                const stacjaSelect = tr.querySelector(`select[name="id_stacji_${kierunek}[]"]`);
-                const infraSelect = tr.querySelector('.infra-select');
-                if (stacjaSelect && infraSelect) {
-                    await pobierzInfrastrukture(stacjaSelect, kierunek, infraSelect.value);
-                }
+    const maStareDane = window.AppConfig.maStareDane;
+    if (!maStareDane) {
+        dodajPostoj();
+        dodajPostoj();
+    } else {
+        const wiersze = document.querySelectorAll('#postoje_tbody tr');
+        for (let tr of wiersze) {
+            const stacjaSelect = tr.querySelector('select[name="id_stacji[]"]');
+            const infraSelect = tr.querySelector('.infra-select');
+            if (stacjaSelect && infraSelect) {
+                await pobierzInfrastrukture(stacjaSelect, infraSelect.value);
             }
         }
-        
-        przyciskiUsuwania(kierunek);
-        godziny(kierunek);
     }
-
     
+    przyciskiUsuwania();
+    godziny();
+
     if (document.getElementById('wagony_lista').children.length === 0) {
         dodajWagon();
     }

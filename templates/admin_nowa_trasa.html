@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Utwórz Trasę Dwukierunkową</title>
+    <title>Utwórz Trasę</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_nowa_trasa_style.css') }}">
 </head>
 <body>
@@ -21,21 +21,15 @@
     {% endwith %}
 
     <div class="container">
-        <h2>Kreator Nowego Połączenia Dwukierunkowego</h2>
+        <h2>Kreator Nowego Połączenia</h2>
         
         <form id="form-nowa-trasa" action="/admin/trasa/nowa" method="POST">
             
             <div class="sekcja">
-                <h3>1. Podstawowe Dane Tras</h3>
-                <div class="grid-2">
-                    <div>
-                        <label>Nazwa trasy (W JEDNĄ STRONĘ - TAM):</label>
-                        <input type="text" name="nazwa_trasy_tam" value="{{ request.form.get('nazwa_trasy_tam', '') }}" placeholder="np. Warszawa -> Kraków" required>
-                    </div>
-                    <div>
-                        <label>Nazwa trasy (POWRÓT):</label>
-                        <input type="text" name="nazwa_trasy_powrot" value="{{ request.form.get('nazwa_trasy_powrot', '') }}" placeholder="np. Kraków -> Warszawa" required>
-                    </div>
+                <h3>1. Podstawowe Dane Trasy</h3>
+                <div>
+                    <label>Nazwa trasy:</label>
+                    <input type="text" name="nazwa_trasy" value="{{ request.form.get('nazwa_trasy', '') }}" placeholder="np. Warszawa -> Kraków" required>
                 </div>
             </div>
 
@@ -43,7 +37,7 @@
                 <h3>2. Konfiguracja Nowego Pociągu</h3>
                 <div class="grid-2">
                     <div>
-                        <label>Nazwa pociągu (Wspólna handlowa):</label>
+                        <label>Nazwa pociągu (Handlowa):</label>
                         <input type="text" name="nazwa_pociagu" value="{{ request.form.get('nazwa_pociagu', '') }}" placeholder="np. Chopin, Pendolino" required>
                     </div>
                     <div>
@@ -57,85 +51,50 @@
                         </select>
                     </div>
                     <div>
-                        <label>Numer pociągu (TAM):</label>
-                        <input type="number" name="numer_pociagu_tam" value="{{ request.form.get('numer_pociagu_tam', '') }}" placeholder="np. 41010" required>
-                    </div>
-                    <div>
-                        <label>Numer pociągu (POWRÓT):</label>
-                        <input type="number" name="numer_pociagu_powrot" value="{{ request.form.get('numer_pociagu_powrot', '') }}" placeholder="np. 14010" required>
+                        <label>Numer pociągu:</label>
+                        <input type="number" name="numer_pociagu" value="{{ request.form.get('numer_pociagu', '') }}" placeholder="np. 41010" required>
                     </div>
                 </div>
             </div>
 
             <div class="sekcja">
                 <h3>3. Rodzaj Kursowania</h3>
-                <div class="grid-2">
-                    {% set typ_tam = request.form.get('typ_kursowania_tam', 'cykliczna') %}
-                    <div class="kolumna-kierunek">
-                        <h4>Kierunek: TAM</h4>
-                        <label class="inline-label"><input type="radio" name="typ_kursowania_tam" value="cykliczna" {% if typ_tam == 'cykliczna' %}checked{% endif %} onclick="toggleHarmonogram('tam', 'cykliczna')"> Cykliczna (dni tygodnia)</label>
-                        <label class="inline-label"><input type="radio" name="typ_kursowania_tam" value="daty" {% if typ_tam == 'daty' %}checked{% endif %} onclick="toggleHarmonogram('tam', 'daty')"> Wybrane daty (najbliższy miesiąc)</label>
-                        
-                        <div id="dni_tygodnia_div_tam" style="margin-top: 15px; display: {% if typ_tam == 'cykliczna' %}block{% else %}none{% endif %};">
-                            {% set dni_tam_wybrane = request.form.getlist('dni_tam[]') %}
-                            {% for d, label in [('poniedziałek','Pon'), ('wtorek','Wto'), ('środa','Śro'), ('czwartek','Czw'), ('piątek','Pią'), ('sobota','Sob'), ('niedziela','Nie')] %}
-                                <label class="inline-label"><input type="checkbox" name="dni_tam[]" value="{{ d }}" {% if d in dni_tam_wybrane %}checked{% endif %}> {{ label }}</label>
-                            {% endfor %}
-                        </div>
-                        <div id="konkretne_daty_div_tam" style="display: {% if typ_tam == 'daty' %}block{% else %}none{% endif %}; margin-top: 15px;">
-                            <div id="daty_lista_tam">
-                                {% if typ_tam == 'daty' %}
-                                    {% for data_val in request.form.getlist('konkretne_daty_tam[]') %}
-                                        <div class="date-item">
-                                            <input type="date" name="konkretne_daty_tam[]" class="date-input-field" value="{{ data_val }}" required>
-                                            <button type="button" class="btn btn-danger" style="padding: 10px 14px;" onclick="this.closest('div').remove()">Usuń</button>
-                                        </div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                            <button type="button" class="btn btn-secondary" style="margin-top: 12px;" onclick="dodajDate('tam')">+ Dodaj datę</button>
-                        </div>
+                <div>
+                    {% set typ = request.form.get('typ_kursowania', 'cykliczna') %}
+                    <label class="inline-label"><input type="radio" name="typ_kursowania" value="cykliczna" {% if typ == 'cykliczna' %}checked{% endif %} onclick="toggleHarmonogram('cykliczna')"> Cykliczna (dni tygodnia)</label>
+                    <label class="inline-label"><input type="radio" name="typ_kursowania" value="daty" {% if typ == 'daty' %}checked{% endif %} onclick="toggleHarmonogram('daty')"> Wybrane daty (najbliższy miesiąc)</label>
+                    
+                    <div id="dni_tygodnia_div" style="margin-top: 15px; display: {% if typ == 'cykliczna' %}block{% else %}none{% endif %};">
+                        {% set dni_wybrane = request.form.getlist('dni[]') %}
+                        {% for d, label in [('poniedziałek','Pon'), ('wtorek','Wto'), ('środa','Śro'), ('czwartek','Czw'), ('piątek','Pią'), ('sobota','Sob'), ('niedziela','Nie')] %}
+                            <label class="inline-label"><input type="checkbox" name="dni[]" value="{{ d }}" {% if d in dni_wybrane %}checked{% endif %}> {{ label }}</label>
+                        {% endfor %}
                     </div>
-
-                    {% set typ_powrot = request.form.get('typ_kursowania_powrot', 'cykliczna') %}
-                    <div class="kolumna-kierunek">
-                        <h4>Kierunek: POWRÓT</h4>
-                        <label class="inline-label"><input type="radio" name="typ_kursowania_powrot" value="cykliczna" {% if typ_powrot == 'cykliczna' %}checked{% endif %} onclick="toggleHarmonogram('powrot', 'cykliczna')"> Cykliczna (dni tygodnia)</label>
-                        <label class="inline-label"><input type="radio" name="typ_kursowania_powrot" value="daty" {% if typ_powrot == 'daty' %}checked{% endif %} onclick="toggleHarmonogram('powrot', 'daty')"> Wybrane daty (najbliższy miesiąc)</label>
-                        
-                        <div id="dni_tygodnia_div_powrot" style="margin-top: 15px; display: {% if typ_powrot == 'cykliczna' %}block{% else %}none{% endif %};">
-                            {% set dni_powrot_wybrane = request.form.getlist('dni_powrot[]') %}
-                            {% for d, label in [('poniedziałek','Pon'), ('wtorek','Wto'), ('środa','Śro'), ('czwartek','Czw'), ('piątek','Pią'), ('sobota','Sob'), ('niedziela','Nie')] %}
-                                <label class="inline-label"><input type="checkbox" name="dni_powrot[]" value="{{ d }}" {% if d in dni_powrot_wybrane %}checked{% endif %}> {{ label }}</label>
-                            {% endfor %}
+                    <div id="konkretne_daty_div" style="display: {% if typ == 'daty' %}block{% else %}none{% endif %}; margin-top: 15px;">
+                        <div id="daty_lista">
+                            {% if typ == 'daty' %}
+                                {% for data_val in request.form.getlist('konkretne_daty[]') %}
+                                    <div class="date-item">
+                                        <input type="date" name="konkretne_daty[]" class="date-input-field" value="{{ data_val }}" required>
+                                        <button type="button" class="btn btn-danger" style="padding: 10px 14px;" onclick="this.closest('div').remove()">Usuń</button>
+                                    </div>
+                                Aminas {% endfor %}
+                            {% endif %}
                         </div>
-                        <div id="konkretne_daty_div_powrot" style="display: {% if typ_powrot == 'daty' %}block{% else %}none{% endif %}; margin-top: 15px;">
-                            <div id="daty_lista_powrot">
-                                {% if typ_powrot == 'daty' %}
-                                    {% for data_val in request.form.getlist('konkretne_daty_powrot[]') %}
-                                        <div class="date-item">
-                                            <input type="date" name="konkretne_daty_powrot[]" class="date-input-field" value="{{ data_val }}" required>
-                                            <button type="button" class="btn btn-danger" style="padding: 10px 14px;" onclick="this.closest('div').remove()">Usuń</button>
-                                        </div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                            <button type="button" class="btn btn-secondary" style="margin-top: 12px;" onclick="dodajDate('powrot')">+ Dodaj datę</button>
-                        </div>
+                        <button type="button" class="btn btn-secondary" style="margin-top: 12px;" onclick="dodajDate()">+ Dodaj datę</button>
                     </div>
                 </div>
             </div>
 
             <div class="sekcja">
-                <h3>4. Harmonogramy Postojów (Modyfikacja stacji wyłącznie pośrodku)</h3>
+                <h3>4. Harmonogram Postojów (Modyfikacja stacji wyłącznie pośrodku)</h3>
                 <p style="color:#64748b; font-size:13px; margin-bottom:15px;">
                     Pierwsza stacja: wpisz tylko <strong>odjazd</strong>.
                     Ostatnia stacja: wpisz tylko <strong>przyjazd</strong>.
                     Stacje pośrednie: obie godziny.
                 </p>
                 <div style="margin-bottom: 35px;">
-                    <h4>Kierunek: TAM</h4>
-                    <table id="postoje_table_tam">
+                    <table id="postoje_table">
                         <thead>
                             <tr>
                                 <th>Stacja</th>
@@ -145,87 +104,42 @@
                                 <th style="width: 90px;">Akcja</th>
                             </tr>
                         </thead>
-                        <tbody id="postoje_tbody_tam">
-                            {% set stacje_tam = request.form.getlist('id_stacji_tam[]') %}
-                            {% set infra_tam = request.form.getlist('id_infra_tam[]') %}
-                            {% set przyjazd_tam = request.form.getlist('godz_przyjazd_tam[]') %}
-                            {% set odjazd_tam = request.form.getlist('godz_odjazd_tam[]') %}
+                        <tbody id="postoje_tbody">
+                            {% set stacje_wybrane = request.form.getlist('id_stacji[]') %}
+                            {% set infra_wybrane = request.form.getlist('id_infra[]') %}
+                            {% set przyjazd_wybrane = request.form.getlist('godz_przyjazd[]') %}
+                            {% set odjazd_wybrane = request.form.getlist('godz_odjazd[]') %}
                             
-                            {% if stacje_tam %}
-                                {% for i in range(stacje_tam|length) %}
+                            {% if stacje_wybrane %}
+                                {% for i in range(stacje_wybrane|length) %}
                                     <tr>
                                         <td>
-                                            <select name="id_stacji_tam[]" required onchange="pobierzInfrastrukture(this, 'tam')">
+                                            <select name="id_stacji[]" required onchange="pobierzInfrastrukture(this)">
                                                 <option value="">Wybierz stację...</option>
                                                 {% for s in stacje %}
-                                                    <option value="{{ s.id_stacji }}" {% if stacje_tam[i] == s.id_stacji|string %}selected{% endif %}>{{ s.nazwa_stacji }}</option>
+                                                    <option value="{{ s.id_stacji }}" {% if stacje_wybrane[i] == s.id_stacji|string %}selected{% endif %}>{{ s.nazwa_stacji }}</option>
                                                 {% endfor %}
                                             </select>
                                         </td>
                                         <td>
-                                            <select name="id_infra_tam[]" class="infra-select" required>
-                                                <option value="{{ infra_tam[i] }}" selected>Wczytywanie...</option>
+                                            <select name="id_infra[]" class="infra-select" required>
+                                                <option value="{{ infra_wybrane[i] }}" selected>Wczytywanie...</option>
                                             </select>
                                         </td>
-                                        <td><input type="time" name="godz_przyjazd_tam[]" class="inp-przyjazd" value="{{ przyjazd_tam[i] }}"></td>
-                                        <td><input type="time" name="godz_odjazd_tam[]" class="inp-odjazd" value="{{ odjazd_tam[i] }}"></td>
-                                        <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this, 'tam')">Usuń</button></td>
+                                        <td><input type="time" name="godz_przyjazd[]" class="inp-przyjazd" value="{{ przyjazd_wybrane[i] }}"></td>
+                                        <td><input type="time" name="godz_odjazd[]" class="inp-odjazd" value="{{ odjazd_wybrane[i] }}"></td>
+                                        <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button></td>
                                     </tr>
                                 {% endfor %}
                             {% endif %}
                         </tbody>
                     </table>
-                    <button type="button" class="btn" onclick="dodajPostoj('tam')">+ Dodaj stację pośrednią (pośrodku)</button>
-                </div>
-
-                <div>
-                    <h4>Kierunek: POWRÓT</h4>
-                    <table id="postoje_table_powrot">
-                        <thead>
-                            <tr>
-                                <th>Stacja</th>
-                                <th>Peron / Tor</th>
-                                <th>Przyjazd</th>
-                                <th>Odjazd</th>
-                                <th style="width: 90px;">Akcja</th>
-                            </tr>
-                        </thead>
-                        <tbody id="postoje_tbody_powrot">
-                            {% set stacje_powrot = request.form.getlist('id_stacji_powrot[]') %}
-                            {% set infra_powrot = request.form.getlist('id_infra_powrot[]') %}
-                            {% set przyjazd_powrot = request.form.getlist('godz_przyjazd_powrot[]') %}
-                            {% set odjazd_powrot = request.form.getlist('godz_odjazd_powrot[]') %}
-                            
-                            {% if stacje_powrot %}
-                                {% for i in range(stacje_powrot|length) %}
-                                    <tr>
-                                        <td>
-                                            <select name="id_stacji_powrot[]" required onchange="pobierzInfrastrukture(this, 'powrot')">
-                                                <option value="">Wybierz stację...</option>
-                                                {% for s in stacje %}
-                                                    <option value="{{ s.id_stacji }}" {% if stacje_powrot[i] == s.id_stacji|string %}selected{% endif %}>{{ s.nazwa_stacji }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select name="id_infra_powrot[]" class="infra-select" required>
-                                                <option value="{{ infra_powrot[i] }}" selected>Wczytywanie...</option>
-                                            </select>
-                                        </td>
-                                        <td><input type="time" name="godz_przyjazd_powrot[]" class="inp-przyjazd" value="{{ przyjazd_powrot[i] }}"></td>
-                                        <td><input type="time" name="godz_odjazd_powrot[]" class="inp-odjazd" value="{{ odjazd_powrot[i] }}"></td>
-                                        <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this, 'powrot')">Usuń</button></td>
-                                    </tr>
-                                {% endfor %}
-                            {% endif %}
-                        </tbody>
-                    </table>
-                    <button type="button" class="btn" onclick="dodajPostoj('powrot')">+ Dodaj stację pośrednią (pośrodku)</button>
+                    <button type="button" class="btn" onclick="dodajPostoj()">+ Dodaj stację pośrednią (pośrodku)</button>
                 </div>
             </div>
 
             <div class="sekcja">
-                <h3>5. Wspólny Skład Wagonowy (Identyczny dla obu kierunków)</h3>
+                <h3>5. Skład Wagonowy</h3>
                 <div id="wagony_lista">
                     {% set form_wagony = request.form.getlist('id_typu_wagonu[]') %}
                     {% if form_wagony %}
@@ -247,14 +161,10 @@
                 <button type="button" class="btn" onclick="dodajWagon()">+ Dodaj wagon na koniec składu</button>
             </div>
 
-            <button type="submit" class="btn" style="background: #2563eb; font-size: 16px; width: 100%; padding: 15px; border-radius: 8px;">ZAPISZ KOMPLETNE POŁĄCZENIE DO BAZY</button>
+            <button type="submit" class="btn" style="background: #2563eb; font-size: 16px; width: 100%; padding: 15px; border-radius: 8px;">ZAPISZ POŁĄCZENIE DO BAZY</button>
         </form>
     </div>
 
-    {#
-        AppConfig MUSI być w szablonie HTML, nie w pliku static/js/.
-        Flask (Jinja) generuje listy stacji i wagonów tylko w plikach .html.
-    #}
     <script>
         window.AppConfig = {
             stacjeOptions: `
@@ -269,10 +179,9 @@
                     <option value="{{ w.id_typu }}">{{ w.nazwa }}</option>
                 {% endfor %}
             `,
-            maStareDaneTam: {% if request.form.getlist('id_stacji_tam[]') %}true{% else %}false{% endif %},
-            maStareDanePowrot: {% if request.form.getlist('id_stacji_powrot[]') %}true{% else %}false{% endif %}
+            maStareDane: {% if request.form.getlist('id_stacji[]') %}true{% else %}false{% endif %}
         };
     </script>
     <script src="{{ url_for('static', filename='js/admin_nowa_trasa.js') }}"></script>
-    </body>
+</body>
 </html>

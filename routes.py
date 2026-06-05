@@ -50,14 +50,14 @@ def dopasuj_listy_postojow(n, godz_przyjazd, godz_odjazd):
     return przyjazd[:n], odjazd[:n]
 
 
-def zapisz_postoje_dla_trasy(id_trasy, kierunek):
-    id_infra = request.form.getlist(f'id_infra_{kierunek}[]')
+def zapisz_postoje_dla_trasy(id_trasy):
+    id_infra = request.form.getlist('id_infra[]')
     n = len(id_infra)
     
     godz_przyjazd, godz_odjazd = dopasuj_listy_postojow(
         n,
-        request.form.getlist(f'godz_przyjazd_{kierunek}[]'),
-        request.form.getlist(f'godz_odjazd_{kierunek}[]'),
+        request.form.getlist('godz_przyjazd[]'),
+        request.form.getlist('godz_odjazd[]'),
     )
     godz_przyjazd, godz_odjazd = przygotuj_godziny_postojow(godz_przyjazd, godz_odjazd)
 
@@ -74,8 +74,8 @@ def zapisz_postoje_dla_trasy(id_trasy, kierunek):
 def waliduj_dane_nowej_trasy():
     bledy = []
 
-    if not request.form.get('nazwa_trasy_tam') or not request.form.get('nazwa_trasy_powrot'):
-        bledy.append('Podaj nazwy tras w obu kierunkach.')
+    if not request.form.get('nazwa_trasy'):
+        bledy.append('Podaj nazwę trasy.')
     nazwa_wspolna = (request.form.get('nazwa_pociagu') or '').strip()
     if not nazwa_wspolna:
         bledy.append('Podaj nazwę pociągu.')
@@ -86,30 +86,26 @@ def waliduj_dane_nowej_trasy():
     if not wagony:
         bledy.append('Dodaj co najmniej jeden wagon do składu.')
 
-    for kierunek, etykieta in [('tam', 'TAM'), ('powrot', 'POWRÓT')]:
-        infra = request.form.getlist(f'id_infra_{kierunek}[]')
-        if len(infra) < 2:
-            bledy.append(f'Kierunek {etykieta}: dodaj co najmniej 2 stacje (start i koniec).')
-        for i, inf in enumerate(infra):
-            if not inf:
-                bledy.append(f'Kierunek {etykieta}: wybierz peron/tor dla postoju nr {i + 1}.')
+    infra = request.form.getlist('id_infra[]')
+    if len(infra) < 2:
+        bledy.append('Dodaj co najmniej 2 stacje (start i koniec).')
+    for i, inf in enumerate(infra):
+        if not inf:
+            bledy.append(f'Wybierz peron/tor dla postoju nr {i + 1}.')
 
-        typ = request.form.get(f'typ_kursowania_{kierunek}')
-        if typ == 'cykliczna':
-            if not request.form.getlist(f'dni_{kierunek}[]'):
-                bledy.append(f'Kierunek {etykieta}: zaznacz co najmniej jeden dzień tygodnia.')
-        elif typ == 'daty':
-            daty = [d for d in request.form.getlist(f'konkretne_daty_{kierunek}[]') if d]
-            if not daty:
-                bledy.append(f'Kierunek {etykieta}: dodaj co najmniej jedną datę kursowania.')
+    typ = request.form.get('typ_kursowania')
+    if typ == 'cykliczna':
+        if not request.form.getlist('dni[]'):
+            bledy.append('Zaznacz co najmniej jeden dzień tygodnia.')
+    elif typ == 'daty':
+        daty = [d for d in request.form.getlist('konkretne_daty[]') if d]
+        if not daty:
+            bledy.append('Dodaj co najmniej jedną datę kursowania.')
 
-    num_tam = (request.form.get('numer_pociagu_tam') or '').strip()
-    num_powrot = (request.form.get('numer_pociagu_powrot') or '').strip()
+    num_pociagu = (request.form.get('numer_pociagu') or '').strip()
     kandydaci = []
-    if nazwa_wspolna and num_tam:
-        kandydaci.append(f"{nazwa_wspolna} {num_tam}")
-    if nazwa_wspolna and num_powrot:
-        kandydaci.append(f"{nazwa_wspolna} {num_powrot}")
+    if nazwa_wspolna and num_pociagu:
+        kandydaci.append(f"{nazwa_wspolna} {num_pociagu}")
 
     if kandydaci:
         with db.session.no_autoflush:
@@ -279,11 +275,9 @@ def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None, od_postoju=None, do_po
         seg_od = seg.od_postoju
         seg_do = seg.do_postoju if seg.do_postoju is not None else max_p
 
-        # Czy dany wagon pokrywa się z wybranym odcinkiem podróży pasażera?
         if not (seg_od < do_postoju and seg_do > od_postoju):
             continue
 
-        # Określenie statusu wagonu względem trasy użytkownika
         status = 'normalny'
         if seg_do < do_postoju:
             status = 'odczepiany'
@@ -729,14 +723,14 @@ def register_admin(app):
 
     @app.route('/admin/trasa/nowa', methods=['GET', 'POST'])
     def admin_nowa_trasa():
-        def zapisz_harmonogram_kierunkowy(id_trasy, id_pociagu, typ_kursowania, kierunek):
+        def zapisz_harmonogram(id_trasy, id_pociagu, typ_kursowania):
             if typ_kursowania == 'cykliczna':
-                dni = request.form.getlist(f'dni_{kierunek}[]')
+                dni = request.form.getlist('dni[]')
                 for dzien in dni:
                     cykl = TrasaCykliczna(id_trasy=id_trasy, dzien_kursowania=dzien)
                     db.session.add(cykl)
             else:
-                daty = request.form.getlist(f'konkretne_daty_{kierunek}[]')
+                daty = request.form.getlist('konkretne_daty[]')
                 for d_str in daty:
                     if d_str:
                         data_obj = datetime.datetime.strptime(d_str, '%Y-%m-%d').date()
@@ -757,39 +751,28 @@ def register_admin(app):
             try:
                 nazwa_wspolna = request.form.get('nazwa_pociagu').strip()
                 kat = request.form.get('kategoria_pociagu')
-                num_tam = request.form.get('numer_pociagu_tam').strip()
-                num_powrot = request.form.get('numer_pociagu_powrot').strip()
+                num_pociagu = request.form.get('numer_pociagu').strip()
                 
-                p_tam = Pociag(nazwa=f"{nazwa_wspolna} {num_tam}" if num_tam else nazwa_wspolna, kategoria=kat)
-                p_powrot = Pociag(nazwa=f"{nazwa_wspolna} {num_powrot}" if num_powrot else nazwa_wspolna, kategoria=kat)
-                
-                db.session.add(p_tam)
-                db.session.add(p_powrot)
+                pociag = Pociag(nazwa=f"{nazwa_wspolna} {num_pociagu}" if num_pociagu else nazwa_wspolna, kategoria=kat)
+                db.session.add(pociag)
                 db.session.flush()
                 
-                t_tam = Trasa(nazwa_trasy=request.form.get('nazwa_trasy_tam'), id_pociagu=p_tam.id_pociagu)
-                t_powrot = Trasa(nazwa_trasy=request.form.get('nazwa_trasy_powrot'), id_pociagu=p_powrot.id_pociagu)
-                
-                db.session.add(t_tam)
-                db.session.add(t_powrot)
+                trasa = Trasa(nazwa_trasy=request.form.get('nazwa_trasy'), id_pociagu=pociag.id_pociagu)
+                db.session.add(trasa)
                 db.session.flush()
                 
-                zapisz_postoje_dla_trasy(t_tam.id_trasy, 'tam')
-                zapisz_postoje_dla_trasy(t_powrot.id_trasy, 'powrot')
+                zapisz_postoje_dla_trasy(trasa.id_trasy)
                 
                 wagony_id = [int(w) for w in request.form.getlist('id_typu_wagonu[]') if w]
-                zapisz_sklad_dla_pociagu(p_tam.id_pociagu, wagony_id)
-                zapisz_sklad_dla_pociagu(p_powrot.id_pociagu, wagony_id)
+                zapisz_sklad_dla_pociagu(pociag.id_pociagu, wagony_id)
                 db.session.flush()
                 
-                zapisz_segmenty_skladu_dla_trasy(t_tam.id_trasy, p_tam.id_pociagu)
-                zapisz_segmenty_skladu_dla_trasy(t_powrot.id_trasy, p_powrot.id_pociagu)
+                zapisz_segmenty_skladu_dla_trasy(trasa.id_trasy, pociag.id_pociagu)
                 
-                zapisz_harmonogram_kierunkowy(t_tam.id_trasy, p_tam.id_pociagu, request.form.get('typ_kursowania_tam'), 'tam')
-                zapisz_harmonogram_kierunkowy(t_powrot.id_trasy, p_powrot.id_pociagu, request.form.get('typ_kursowania_powrot'), 'powrot')
+                zapisz_harmonogram(trasa.id_trasy, pociag.id_pociagu, request.form.get('typ_kursowania'))
                 
                 db.session.commit()
-                flash('Trasy zostały pomyślnie utworzone!', 'success')
+                flash('Trasa została pomyślnie utworzona!', 'success')
                 return redirect('/admin')
             except Exception as e:
                 db.session.rollback()
@@ -799,23 +782,37 @@ def register_admin(app):
         typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
         return render_template('admin_nowa_trasa.html', stacje=stacje, typy_wagonow=typy_wagonow)
 
+    @app.route('/admin/trasa/od_do', methods=['GET'])
+    def admin_trasa_od_do():
+        stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
+        return render_template('admin_trasy_lista.html', stacje=stacje)
+
     @app.route('/admin/wagony', methods=['GET', 'POST'])
     def admin_wagony():
         if request.method == 'POST':
             akcja = request.form.get('akcja')
-            if akcja == 'dodaj_typ':
-                nazwa = request.form.get('nazwa')
-                rzedy = request.form.get('liczba_rzedow', type=int)
-                kolumny = request.form.get('liczba_kolumn', type=int)
-                przedzial = request.form.get('czy_przedzialowy') == '1'
-                try:
-                    nowy_typ = TypWagonu(nazwa=nazwa, liczba_rzedow=rzedy, liczba_kolumn=kolumny, czy_przedzialowy=przedzial)
-                    db.session.add(nowy_typ)
-                    db.session.commit()
-                    flash(f'Dodano nowy typ wagonu: {nazwa}', 'success')
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f'Błąd: {czytelny_komunikat_bledu(e)}', 'danger')
+
+            if akcja == 'dodaj':
+                id_typu = request.form.get('id_typu', type=int)
+                if not id_typu:
+                    flash('Wybierz typ wagonu z listy.', 'danger')
+                else:
+                    try:
+                        typ = db.session.get(TypWagonu, id_typu)
+                        if not typ:
+                            flash('Wybrany typ wagonu nie istnieje.', 'danger')
+                        else:
+                            nowy_wagon = Wagon(id_typu=id_typu)
+                            db.session.add(nowy_wagon)
+                            db.session.commit()
+                            flash(
+                                f'Utworzono wagon #{nowy_wagon.id_wagonu} (typ: {typ.nazwa}).',
+                                'success'
+                            )
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Błąd: {czytelny_komunikat_bledu(e)}', 'danger')
+
             elif akcja == 'usun':
                 id_wagonu = request.form.get('id_wagonu', type=int)
                 try:
@@ -823,8 +820,11 @@ def register_admin(app):
                     if not wagon:
                         flash('Nie znaleziono takiego wagonu.', 'danger')
                     elif db.session.query(Sklad).filter_by(id_wagonu=id_wagonu).first() or \
-                         db.session.query(SkladSegment).filter_by(id_wagonu=id_wagonu).first():
-                        flash(f'Wagon #{id_wagonu} jest w składzie pociągu lub segmencie trasy – nie można go usunąć.', 'danger')
+                            db.session.query(SkladSegment).filter_by(id_wagonu=id_wagonu).first():
+                        flash(
+                            f'Wagon #{id_wagonu} jest w składzie pociągu lub segmencie trasy – nie można go usunąć.',
+                            'danger'
+                        )
                     else:
                         db.session.delete(wagon)
                         db.session.commit()
@@ -832,17 +832,124 @@ def register_admin(app):
                 except Exception as e:
                     db.session.rollback()
                     flash(f'Błąd: {czytelny_komunikat_bledu(e)}', 'danger')
+
             return redirect('/admin/wagony')
-            
+
         typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
         wagony = pobierz_wagony_do_listy_admin()
-        return render_template('admin_wagony.html', typy_wagonow=typy_wagonow, wagony=wagony)
+        return render_template(
+            'admin_wagony.html',
+            typy_wagonow=typy_wagonow,
+            wagony=wagony,
+        )
 
     @app.route('/api/infrastruktura/<int:id_stacji>')
     def api_infrastruktura(id_stacji):
         infrastruktura = db.session.query(InfrastrukturaStacji).filter_by(id_stacji=id_stacji).all()
-        return jsonify([{'id': element.id, 'peron': element.numer_peronu, 'tor': element.numer_toru} for element in infrastruktura])
+        return jsonify([
+            {
+                'id': element.id,
+                'peron': element.numer_peronu,
+                'tor': element.numer_toru
+            }
+            for element in infrastruktura
+        ])
+    
+    @app.route('/api/trasy/od_do', methods=['GET'])
+    def api_trasy_od_do():
+        start_id = request.args.get('start', type=int)
+        end_id = request.args.get('end', type=int)
 
+        if not start_id or not end_id:
+            return jsonify([])
+
+        query = text("""
+            SELECT DISTINCT
+                t.id_trasy,
+                t.nazwa_trasy,
+                COALESCE(prz.id_pociagu, t.id_pociagu) AS id_pociagu,
+                poc.nazwa as nazwa_pociagu
+            FROM trasy t
+            JOIN postoje p1 ON t.id_trasy = p1.id_trasy
+            JOIN postoje p2 ON t.id_trasy = p2.id_trasy
+            JOIN infrastruktura_stacji i1 ON p1.id_peronu_toru = i1.id
+            JOIN infrastruktura_stacji i2 ON p2.id_peronu_toru = i2.id
+            LEFT JOIN przejazdy prz ON t.id_trasy = prz.id_trasy
+            LEFT JOIN pociagi poc ON poc.id_pociagu = COALESCE(prz.id_pociagu, t.id_pociagu)
+            WHERE i1.id_stacji = :start_id 
+              AND i2.id_stacji = :end_id
+              AND p1.numer_postoju < p2.numer_postoju
+        """)
+        
+        wyniki = db.session.execute(query, {'start_id': start_id, 'end_id': end_id}).fetchall()
+        
+        trasy_lista = []
+        for r in wyniki:
+            nazwa_handlowa = r.nazwa_pociagu.rsplit(' ', 1)[0] if r.nazwa_pociagu else ""
+            
+            trasy_lista.append({
+                'id_trasy': r.id_trasy,
+                'nazwa_trasy': r.nazwa_trasy,
+                'id_pociagu': r.id_pociagu,
+                'nazwa_pociagu': r.nazwa_pociagu,
+                'nazwa_handlowa': nazwa_handlowa
+            })
+
+        return jsonify(trasy_lista)
+    
+
+    @app.route('/admin/trasa/zarzadzaj/<int:id_trasy>', methods=['GET'])
+    def admin_zarzadzaj_trasa(id_trasy):
+        trasa_tam = db.session.get(Trasa, id_trasy)
+        if not trasa_tam:
+            flash("Nie znaleziono takiej trasy.", "danger")
+            return redirect('/admin/trasa/od_do')
+
+        if trasa_tam.id_pociagu:
+            pociag_tam = db.session.get(Pociag, trasa_tam.id_pociagu)
+        else:
+            przejazd = db.session.query(Przejazd).filter_by(id_trasy=id_trasy).first()
+            pociag_tam = db.session.get(Pociag, przejazd.id_pociagu) if przejazd else None
+
+        cykle_tam = db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy).all()
+        przejazdy_tam = db.session.query(Przejazd).filter_by(id_trasy=id_trasy).order_by(Przejazd.data_przejazdu).all()
+
+        segmenty_tam = db.session.query(SkladSegment, Wagon, TypWagonu).\
+            join(Wagon, SkladSegment.id_wagonu == Wagon.id_wagonu).\
+            join(TypWagonu, Wagon.id_typu == TypWagonu.id_typu).\
+            filter(SkladSegment.id_trasy == id_trasy).\
+            order_by(SkladSegment.numer_kolejnosci).all()
+
+        return render_template('admin_zarzadzaj_trasa.html', 
+                               trasa_tam=trasa_tam, pociag_tam=pociag_tam, cykle_tam=cykle_tam,
+                               przejazdy_tam=przejazdy_tam, segmenty_tam=segmenty_tam)
+    
+    @app.route('/admin/trasa/usun_calkowicie', methods=['POST'])
+    def admin_usun_calkowicie():
+        id_trasy_tam = request.form.get('id_trasy_tam', type=int)
+        id_trasy_powrot = request.form.get('id_trasy_powrot', type=int)
+
+        try:
+            tras_ids = [id_trasy_tam]
+            if id_trasy_powrot:
+                tras_ids.append(id_trasy_powrot)
+
+            for tid in tras_ids:
+                if tid:
+                    db.session.query(SkladSegment).filter_by(id_trasy=tid).delete()
+                    db.session.query(Postoj).filter_by(id_trasy=tid).delete()
+                    db.session.query(TrasaCykliczna).filter_by(id_trasy=tid).delete()
+                    db.session.query(Przejazd).filter_by(id_trasy=tid).delete()
+                    db.session.query(Trasa).filter_by(id_trasy=tid).delete()
+            
+            db.session.commit()
+            flash("Wybrane trasy (i powiązane z nimi harmonogramy) zostały usunięte. Wagony i Pociągi pozostały w bazie.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Wystąpił błąd podczas usuwania trasy: {str(e)}", "danger")
+
+        return redirect('/admin/trasa/od_do')
+    
     @app.route('/admin/trasa/usun_harmonogram', methods=['POST'])
     def admin_usun_harmonogram():
         try:
@@ -851,6 +958,7 @@ def register_admin(app):
                 id_trasy = request.form.get('id_trasy', type=int)
                 db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy, dzien_kursowania=dzien).delete()
                 msg = f"Usunięto cykliczny kurs: {dzien}."
+
             elif 'data_przejazdu' in request.form:
                 data_str = request.form.get('data_przejazdu')
                 id_trasy = request.form.get('id_trasy', type=int)
@@ -858,9 +966,14 @@ def register_admin(app):
                 data_obj = datetime.datetime.strptime(data_str, '%Y-%m-%d').date()
                 db.session.query(Przejazd).filter_by(id_trasy=id_trasy, id_pociagu=id_pociagu, data_przejazdu=data_obj).delete()
                 msg = f"Usunięto przejazd z dnia {data_str}."
+            
             db.session.commit()
             flash(msg, "success")
+            
+            base_trasa = request.form.get('base_trasa', type=int)
+            return redirect(f'/admin/trasa/zarzadzaj/{base_trasa}')
+            
         except Exception as e:
             db.session.rollback()
-            flash(f"Wystąpił błąd podczas usuwania trasy: {str(e)}", "danger")
-        return redirect('/admin')
+            flash(f"Wystąpił błąd: {str(e)}", "danger")
+            return redirect('/admin/trasa/od_do')
