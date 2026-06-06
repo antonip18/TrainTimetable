@@ -40340,16 +40340,16 @@ DECLARE
 BEGIN
     IF NEW.numer_postoju = 1 THEN
         IF NEW.godzina_przyjazdu IS NOT NULL THEN
-            RAISE EXCEPTION 'Postój nr 1 to stacja początkowa – nie może mieć godziny przyjazdu.';
+            RAISE EXCEPTION 'Postoj nr 1 to stacja poczatkowa – nie może miec godziny przyjazdu.';
         END IF;
         IF NEW.godzina_odjazdu IS NULL THEN
-            RAISE EXCEPTION 'Postój nr 1 to stacja początkowa – musi mieć podaną godzinę odjazdu.';
+            RAISE EXCEPTION 'Postoj nr 1 to stacja poczatkowa – musi miec podana godzine odjazdu.';
         END IF;
     END IF;
 
     IF NEW.numer_postoju > 1 THEN
         IF NEW.godzina_przyjazdu IS NULL THEN
-            RAISE EXCEPTION 'Postój nr % musi mieć podaną godzinę przyjazdu.', NEW.numer_postoju;
+            RAISE EXCEPTION 'Postoj nr % musi mieć podaną godzine przyjazdu.', NEW.numer_postoju;
         END IF;
     END IF;
 
@@ -40359,7 +40359,7 @@ BEGIN
         czas_postoju := czas_odjazdu - czas_przyjazdu;
 
         IF czas_postoju < 0 THEN
-            RAISE EXCEPTION 'Postój nr % ma godzinę odjazdu wcześniejszą niż godzinę przyjazdu.', NEW.numer_postoju;
+            RAISE EXCEPTION 'Postoj nr % ma godzine odjazdu wczesniejsza niż godzine przyjazdu.', NEW.numer_postoju;
         END IF;
 
         IF czas_postoju > 90 THEN
@@ -40374,7 +40374,7 @@ BEGIN
         AND numer_postoju = NEW.numer_postoju - 1;
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION 'Brakuje postoju nr % na trasie %. Numery muszą iść po kolei.', NEW.numer_postoju - 1, NEW.id_trasy;
+            RAISE EXCEPTION 'Brakuje postoju nr % na trasie %. Numery muszą isc po kolei.', NEW.numer_postoju - 1, NEW.id_trasy;
         END IF;
 
         IF poprzedni.godzina_odjazdu IS NOT NULL AND NEW.godzina_przyjazdu IS NOT NULL THEN
@@ -40382,7 +40382,7 @@ BEGIN
             czas_poprzedni_odjazd := poprzedni.dzien_odjazdu_offset * 1440 + EXTRACT(HOUR FROM poprzedni.godzina_odjazdu)::INTEGER * 60 + EXTRACT(MINUTE FROM poprzedni.godzina_odjazdu)::INTEGER;
 
             IF czas_przyjazdu < czas_poprzedni_odjazd THEN
-                RAISE EXCEPTION 'Postój nr % ma przyjazd wcześniejszy niż odjazd z postoju nr %.', NEW.numer_postoju, NEW.numer_postoju - 1;
+                RAISE EXCEPTION 'Postoj nr % ma przyjazd wczesniejszy niż odjazd z postoju nr %.', NEW.numer_postoju, NEW.numer_postoju - 1;
             END IF;
             
             SELECT p.kategoria INTO kategoria
@@ -40429,7 +40429,7 @@ BEGIN
 
             IF czas_rzeczywisty < min_czas OR czas_rzeczywisty > max_czas THEN
                 RAISE EXCEPTION 
-                    'Pociąg kategorii % na odcinku między postojem % a % nie powinien jechać % min! Dystans: % km. Dopuszczalny czas przejazdu na tej trasie wynosi od % do % min.',
+                    'Pociag kategorii % na odcinku miedzy postojem % a % nie powinien jechac % min! Dystans: % km. Dopuszczalny czas przejazdu na tej trasie wynosi od % do % min.',
                     kategoria, NEW.numer_postoju - 1, NEW.numer_postoju, czas_rzeczywisty,
                     ROUND(dystans::numeric, 2), ROUND(min_czas::numeric, 1), 
                     ROUND(max_czas::numeric, 1);
@@ -40457,14 +40457,14 @@ BEGIN
     SELECT * INTO ostatni FROM postoje WHERE id_trasy = NEW.id_trasy ORDER BY numer_postoju DESC LIMIT 1;
 
     IF ostatni.numer_postoju > 1 AND ostatni.godzina_odjazdu IS NOT NULL THEN
-        RAISE EXCEPTION 'Ostatni postój (nr %) jest stacją końcową - nie może mieć czasu odjazdu.', ostatni.numer_postoju;
+        RAISE EXCEPTION 'Ostatni postoj (nr %) jest stacja koncowa - nie może miec czasu odjazdu.', ostatni.numer_postoju;
     END IF;
 
     FOR rec IN 
         SELECT numer_postoju, godzina_odjazdu FROM postoje WHERE id_trasy = NEW.id_trasy AND numer_postoju > 1 AND numer_postoju < ostatni.numer_postoju
     LOOP
         IF rec.godzina_odjazdu IS NULL THEN
-            RAISE EXCEPTION 'Postój pośredni nr % musi mieć określony czas odjazdu.', rec.numer_postoju;
+            RAISE EXCEPTION 'Postoj posredni nr % musi miec okreslony czas odjazdu.', rec.numer_postoju;
         END IF;
     END LOOP;
 
@@ -40524,7 +40524,7 @@ BEGIN
     LIMIT 1;
 
     IF konflikt IS NOT NULL THEN
-        RAISE EXCEPTION 'Konflikt na peronie/torze! Trasa % (postój %) pokrywa się czasowo z istniejącą trasą % (postój %).', id_trasy_sprawdzanej, konflikt.postoj_nowy, konflikt.trasa_konfliktowa, konflikt.postoj_stary;
+        RAISE EXCEPTION 'Konflikt na peronie/torze! Trasa % (postoj %) pokrywa się czasowo z istniejaca trasą % (postoj %).', id_trasy_sprawdzanej, konflikt.postoj_nowy, konflikt.trasa_konfliktowa, konflikt.postoj_stary;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -40643,7 +40643,7 @@ BEGIN
         konflikt := czy_wagon_ma_konflikt(rec.id_wagonu, NEW.id_trasy, rec.od_postoju, rec.do_postoju, NEW.data_przejazdu);
 
         IF konflikt IS NOT NULL THEN
-            RAISE EXCEPTION 'Konflikt wagonu! Dodanie przejazdu w dniu % powoduje, że wagon % byłby w tym samym czasie używany na trasie %.', NEW.data_przejazdu, rec.id_wagonu, konflikt;
+            RAISE EXCEPTION 'Konflikt wagonu! Dodanie przejazdu w dniu % powoduje, że wagon % bylby w tym samym czasie uzywany na trasie %.', NEW.data_przejazdu, rec.id_wagonu, konflikt;
         END IF;
     END LOOP;
     RETURN NEW;
@@ -40661,7 +40661,7 @@ CREATE OR REPLACE FUNCTION blokuj_przejazd_gdy_cykliczna()
 RETURNS TRIGGER AS $$
 BEGIN
     IF EXISTS (SELECT 1 FROM trasy_cykliczne WHERE id_trasy = NEW.id_trasy) THEN
-        RAISE EXCEPTION 'Trasa % ma harmonogram cykliczny – nie można dodać jednorazowego przejazdu.', NEW.id_trasy;
+        RAISE EXCEPTION 'Trasa % ma harmonogram cykliczny – nie można dodac jednorazowego przejazdu.', NEW.id_trasy;
     END IF;
     RETURN NEW;
 END;
@@ -40676,7 +40676,7 @@ CREATE OR REPLACE FUNCTION blokuj_cykliczna_gdy_przejazdy()
 RETURNS TRIGGER AS $$
 BEGIN
     IF EXISTS (SELECT 1 FROM przejazdy WHERE id_trasy = NEW.id_trasy) THEN
-        RAISE EXCEPTION 'Trasa % ma przejazdy jednorazowe – nie można dodać harmonogramu cyklicznego.', NEW.id_trasy;
+        RAISE EXCEPTION 'Trasa % ma przejazdy jednorazowe – nie można dodac harmonogramu cyklicznego.', NEW.id_trasy;
     END IF;
     RETURN NEW;
 END;
@@ -40782,3 +40782,8 @@ CREATE TRIGGER postoje_zmiana
 BEFORE UPDATE OR DELETE ON POSTOJE
 FOR EACH ROW
 EXECUTE FUNCTION postoje_czyszczenie();
+
+SELECT setval('seq_pociagi', (SELECT MAX(id_pociagu) FROM pociagi));
+SELECT setval('seq_trasy', (SELECT MAX(id_trasy) FROM trasy));
+SELECT setval('seq_wagony', (SELECT MAX(id_wagonu) FROM wagony));
+SELECT setval('seq_zmiany_skladu', (SELECT MAX(id_zmiany) FROM zmiany_skladu));
