@@ -45,16 +45,19 @@ function dodajPostoj() {
         </td>
         <td><input type="time" name="godz_przyjazd[]" class="inp-przyjazd"></td>
         <td><input type="time" name="godz_odjazd[]" class="inp-odjazd"></td>
-        <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button></td>
+        <td>
+            <div class="akcje-postoju">
+                <button type="button" class="btn btn-secondary btn-przesun-gora" onclick="przesunPostoj(this, -1)">Góra</button>
+                <button type="button" class="btn btn-secondary btn-przesun-dol" onclick="przesunPostoj(this, 1)">Dół</button>
+                <button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button>
+            </div>
+        </td>
     `;
 
-    const wiersze = tbody.querySelectorAll('tr');
-
-    if (wiersze.length >= 2) {
-        // Wstawiamy nowy wiersz dokładnie PRZED ostatni istniejący wiersz (wiersze[wiersze.length - 1])
-        tbody.insertBefore(row, wiersze[wiersze.length - 1]);
+    const dodawajPrzedOstatnim = window.AppConfig.dodawajPrzedOstatnim !== false;
+    if (dodawajPrzedOstatnim && tbody.children.length >= 2) {
+        tbody.insertBefore(row, tbody.lastChild);
     } else {
-        // Jeśli są mniej niż 2 wiersze, po prostu doklejamy na koniec
         tbody.appendChild(row);
     }
     
@@ -64,10 +67,15 @@ function dodajPostoj() {
 
 function przyciskiUsuwania() {
     const wiersze = document.querySelectorAll('#postoje_tbody tr');
+    const blokujSkrajnePostoje = window.AppConfig.blokujSkrajnePostoje !== false;
     wiersze.forEach((wiersz, index) => {
         const btnUsun = wiersz.querySelector('.btn-usun-postoj');
+        const btnGora = wiersz.querySelector('.btn-przesun-gora');
+        const btnDol = wiersz.querySelector('.btn-przesun-dol');
         if (btnUsun) {
-            if (index === 0 || index === wiersze.length - 1) {
+            const czySkrajny = index === 0 || index === wiersze.length - 1;
+            const czyZablokowany = wiersze.length <= 2 || (blokujSkrajnePostoje && czySkrajny);
+            if (czyZablokowany) {
                 btnUsun.disabled = true;
                 btnUsun.style.opacity = "0.4";
                 btnUsun.style.cursor = "not-allowed";
@@ -76,6 +84,12 @@ function przyciskiUsuwania() {
                 btnUsun.style.opacity = "1";
                 btnUsun.style.cursor = "pointer";
             }
+        }
+        if (btnGora) {
+            btnGora.disabled = index === 0;
+        }
+        if (btnDol) {
+            btnDol.disabled = index === wiersze.length - 1;
         }
     });
 }
@@ -88,12 +102,19 @@ function godziny() {
 
         if (!inpPrzyjazd || !inpOdjazd) return;
 
+        inpPrzyjazd.disabled = false;
+        inpPrzyjazd.title = '';
+        inpOdjazd.disabled = false;
+        inpOdjazd.title = '';
+
         if (index === 0 && inpPrzyjazd) {
+            inpPrzyjazd.value = '';
             inpPrzyjazd.disabled = true;
             inpOdjazd.disabled = false;
             inpPrzyjazd.title = 'Pierwsza stacja – wpisz tylko godzinę odjazdu';
         }
         if (index === wiersze.length - 1 && inpOdjazd) {
+            inpOdjazd.value = '';
             inpOdjazd.disabled = true;
             inpPrzyjazd.disabled = false;
             inpOdjazd.title = 'Ostatnia stacja – wpisz tylko godzinę przyjazdu';
@@ -102,7 +123,23 @@ function godziny() {
 }
 
 function usunPostoj(btn) {
+    if (document.querySelectorAll('#postoje_tbody tr').length <= 2) {
+        return;
+    }
     btn.closest('tr').remove();
+    przyciskiUsuwania();
+    godziny();
+}
+
+function przesunPostoj(btn, kierunek) {
+    const row = btn.closest('tr');
+    const tbody = row.parentElement;
+    if (kierunek < 0 && row.previousElementSibling) {
+        tbody.insertBefore(row, row.previousElementSibling);
+    }
+    if (kierunek > 0 && row.nextElementSibling) {
+        tbody.insertBefore(row.nextElementSibling, row);
+    }
     przyciskiUsuwania();
     godziny();
 }

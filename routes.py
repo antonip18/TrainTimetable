@@ -166,6 +166,52 @@ def waliduj_dane_nowej_trasy():
     return bledy
 
 
+def waliduj_dane_edycji_trasy():
+    bledy = []
+
+    if not (request.form.get('nazwa_trasy') or '').strip():
+        bledy.append('Podaj nazwę trasy.')
+    if not (request.form.get('nazwa_pociagu') or '').strip():
+        bledy.append('Podaj nazwę pociągu.')
+    if not request.form.get('kategoria_pociagu'):
+        bledy.append('Wybierz kategorię pociągu.')
+
+    infra = request.form.getlist('id_infra[]')
+    if len(infra) < 2:
+        bledy.append('Trasa musi mieć co najmniej 2 postoje.')
+    for i, inf in enumerate(infra):
+        if not inf:
+            bledy.append(f'Wybierz peron/tor dla postoju nr {i + 1}.')
+
+    n = len(infra)
+    godz_przyjazd = request.form.getlist('godz_przyjazd[]')
+    godz_odjazd = request.form.getlist('godz_odjazd[]')
+    if n >= 2:
+        przyjazd_dopasowany, odjazd_dopasowany = dopasuj_listy_postojow(n, godz_przyjazd, godz_odjazd)
+        for i in range(n):
+            if i > 0 and (not przyjazd_dopasowany[i] or not przyjazd_dopasowany[i].strip()):
+                bledy.append(f'Podaj godzinę przyjazdu dla stacji nr {i + 1}.')
+            if i < n - 1 and (not odjazd_dopasowany[i] or not odjazd_dopasowany[i].strip()):
+                bledy.append(f'Podaj godzinę odjazdu dla stacji nr {i + 1}.')
+
+    wagony = [w for w in request.form.getlist('id_typu_wagonu[]') if w]
+    if not wagony:
+        bledy.append('Dodaj co najmniej jeden wagon do składu.')
+
+    typ = request.form.get('typ_kursowania')
+    if typ == 'cykliczna':
+        if not request.form.getlist('dni[]'):
+            bledy.append('Zaznacz co najmniej jeden dzień tygodnia.')
+    elif typ == 'daty':
+        daty = [d for d in request.form.getlist('konkretne_daty[]') if d]
+        if not daty:
+            bledy.append('Dodaj co najmniej jedną datę kursowania.')
+    else:
+        bledy.append('Wybierz rodzaj kursowania.')
+
+    return bledy
+
+
 def czytelny_komunikat_bledu(wyjatek):
     import re
     msg = str(wyjatek)
@@ -1265,14 +1311,20 @@ def register_admin(app):
             return redirect('/admin/trasa/od_do')
 
         if request.method == 'POST':
+            bledy_walidacji = waliduj_dane_edycji_trasy()
+            if bledy_walidacji:
+                for blad in bledy_walidacji:
+                    flash(blad, 'danger')
+                return redirect(f'/admin/trasa/edytuj/{id_trasy}')
+
             try:
                 # 1. Aktualizacja Pociągu i Trasy
                 nazwa_wspolna = request.form.get('nazwa_pociagu').strip()
-                num_pociagu = request.form.get('numer_pociagu').strip()
+                num_pociagu = (request.form.get('numer_pociagu') or '').strip()
                 pociag.nazwa = f"{nazwa_wspolna} {num_pociagu}".strip() if num_pociagu else nazwa_wspolna
                 pociag.kategoria = request.form.get('kategoria_pociagu')
                 
-                trasa.nazwa_trasy = request.form.get('nazwa_trasy')
+                trasa.nazwa_trasy = request.form.get('nazwa_trasy').strip()
 
                 # 2. Przywrócenie przepiętych wagonów, potem czyszczenie starych zależności
                 przywroc_wagony_po_zmianie_trasy(id_trasy)

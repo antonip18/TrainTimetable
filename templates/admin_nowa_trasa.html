@@ -78,7 +78,7 @@
                                         <input type="date" name="konkretne_daty[]" class="date-input-field" value="{{ data_val }}" required>
                                         <button type="button" class="btn btn-danger" style="padding: 10px 14px;" onclick="this.closest('div').remove()">Usuń</button>
                                     </div>
-                                Aminas {% endfor %}
+                                {% endfor %}
                             {% endif %}
                         </div>
                         <button type="button" class="btn btn-secondary" style="margin-top: 12px;" onclick="dodajDate()">+ Dodaj datę</button>
@@ -101,7 +101,7 @@
                                 <th>Peron / Tor</th>
                                 <th>Przyjazd</th>
                                 <th>Odjazd</th>
-                                <th style="width: 90px;">Akcja</th>
+                                <th style="width: 180px;">Akcja</th>
                             </tr>
                         </thead>
                         <tbody id="postoje_tbody">
@@ -128,7 +128,13 @@
                                         </td>
                                         <td><input type="time" name="godz_przyjazd[]" class="inp-przyjazd" value="{{ przyjazd_wybrane[i] }}"></td>
                                         <td><input type="time" name="godz_odjazd[]" class="inp-odjazd" value="{{ odjazd_wybrane[i] }}"></td>
-                                        <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button></td>
+                                        <td>
+                                            <div class="akcje-postoju">
+                                                <button type="button" class="btn btn-secondary btn-przesun-gora" onclick="przesunPostoj(this, -1)">Góra</button>
+                                                <button type="button" class="btn btn-secondary btn-przesun-dol" onclick="przesunPostoj(this, 1)">Dół</button>
+                                                <button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             {% endif %}

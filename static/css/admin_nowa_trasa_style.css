@@ -155,6 +155,17 @@ tr:last-child td {
     margin-top: 8px;
 }
 
+.akcje-postoju {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.akcje-postoju .btn {
+    padding: 7px 9px;
+    font-size: 12px;
+}
+
 label {
     display: block;
     margin-bottom: 6px;

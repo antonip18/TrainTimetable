@@ -27,7 +27,38 @@
         <form id="form-nowa-trasa" action="/admin/trasa/edytuj/{{ trasa.id_trasy }}" method="POST">
 
             <div class="sekcja">
-                <h3>1. Rodzaj Kursowania</h3>
+                <h3>1. Podstawowe Dane Trasy</h3>
+                <div>
+                    <label>Nazwa trasy:</label>
+                    <input type="text" name="nazwa_trasy" value="{{ trasa.nazwa_trasy }}" placeholder="np. Warszawa -> Kraków" required>
+                </div>
+            </div>
+
+            <div class="sekcja sekcja-zielona">
+                <h3>2. Konfiguracja Pociągu</h3>
+                <div class="grid-2">
+                    <div>
+                        <label>Nazwa pociągu (Handlowa):</label>
+                        <input type="text" name="nazwa_pociagu" value="{{ pociag_handlowa }}" placeholder="np. Chopin, Pendolino" required>
+                    </div>
+                    <div>
+                        <label>Kategoria pociągu:</label>
+                        <select name="kategoria_pociagu" required>
+                            <option value="">-- Wybierz kategorię --</option>
+                            {% for k in ['TLK', 'IC', 'EIC', 'EIP', 'EC', 'EN', 'ICN', 'IC/MP', 'EN/IC', 'EC/IC/ICN', 'IC+', 'EC/EIC', 'EC/IC'] %}
+                                <option value="{{ k }}" {% if pociag.kategoria == k %}selected{% endif %}>{{ k }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Numer pociągu:</label>
+                        <input type="number" name="numer_pociagu" value="{{ pociag_numer }}" placeholder="np. 41010">
+                    </div>
+                </div>
+            </div>
+
+            <div class="sekcja">
+                <h3>3. Rodzaj Kursowania</h3>
                 <div>
                     {% set typ = 'cykliczna' if cykle else 'daty' %}
                     <label class="inline-label"><input type="radio" name="typ_kursowania" value="cykliczna" {% if typ == 'cykliczna' %}checked{% endif %} onclick="toggleHarmonogram('cykliczna')"> Cykliczna (dni tygodnia)</label>
@@ -55,9 +86,10 @@
             </div>
 
             <div class="sekcja">
-                <h3>2. Harmonogram Postojów</h3>
+                <h3>4. Harmonogram Postojów</h3>
                 <p style="color:#64748b; font-size:13px; margin-bottom:15px;">
-                    Uważaj: Zmiana stacji pośrodku może zresetować przepięcia (manewry) ustalone dla tej trasy.
+                    Możesz zmieniać kolejność, stacje i perony/tor postojów. Trasa musi mieć co najmniej stację początkową i końcową.
+                    Zapis zmian resetuje przepięcia (manewry) ustalone dla tej trasy.
                 </p>
                 <div style="margin-bottom: 35px;">
                     <table id="postoje_table">
@@ -67,7 +99,7 @@
                                 <th>Peron / Tor</th>
                                 <th>Przyjazd</th>
                                 <th>Odjazd</th>
-                                <th style="width: 90px;">Akcja</th>
+                                <th style="width: 180px;">Akcja</th>
                             </tr>
                         </thead>
                         <tbody id="postoje_tbody">
@@ -88,17 +120,23 @@
                                     </td>
                                     <td><input type="time" name="godz_przyjazd[]" class="inp-przyjazd" value="{{ postoj.godzina_przyjazdu.strftime('%H:%M') if postoj.godzina_przyjazdu else '' }}"></td>
                                     <td><input type="time" name="godz_odjazd[]" class="inp-odjazd" value="{{ postoj.godzina_odjazdu.strftime('%H:%M') if postoj.godzina_odjazdu else '' }}"></td>
-                                    <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button></td>
+                                    <td>
+                                        <div class="akcje-postoju">
+                                            <button type="button" class="btn btn-secondary btn-przesun-gora" onclick="przesunPostoj(this, -1)">Góra</button>
+                                            <button type="button" class="btn btn-secondary btn-przesun-dol" onclick="przesunPostoj(this, 1)">Dół</button>
+                                            <button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button>
+                                        </div>
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                    <button type="button" class="btn" onclick="dodajPostoj()">+ Dodaj stację pośrednią</button>
+                    <button type="button" class="btn" onclick="dodajPostoj()">+ Dodaj postój na końcu trasy</button>
                 </div>
             </div>
 
             <div class="sekcja">
-                <h3>3. Skład Wagonowy</h3>
+                <h3>5. Skład Wagonowy</h3>
                 <div id="wagony_lista">
                     {% for wagon_id in wagony_db %}
                         <div class="wagon-item">
@@ -135,7 +173,9 @@
                     <option value="{{ w.id_typu }}">{{ w.nazwa }}</option>
                 {% endfor %}
             `,
-            maStareDane: true 
+            maStareDane: true,
+            dodawajPrzedOstatnim: false,
+            blokujSkrajnePostoje: false
         };
     </script>
     <script src="{{ url_for('static', filename='js/admin_nowa_trasa.js') }}"></script>
