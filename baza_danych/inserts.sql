@@ -39962,4 +39962,9 @@ COPY zmiany_skladu (id_zmiany, id_trasy, numer_postoju, id_wagonu, typ_operacji,
 
 COMMIT;
 
+SELECT setval('seq_pociagi', (SELECT MAX(id_pociagu) FROM pociagi));
+SELECT setval('seq_trasy', (SELECT MAX(id_trasy) FROM trasy));
+SELECT setval('seq_wagony', (SELECT MAX(id_wagonu) FROM wagony));
+SELECT setval('seq_zmiany_skladu', (SELECT MAX(id_zmiany) FROM zmiany_skladu));
+
 -- Po załadowaniu uruchom: psql -U pociag -d kolei_db -f baza_danych/triggery.sql

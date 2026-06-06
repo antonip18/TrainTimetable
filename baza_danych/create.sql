@@ -141,13 +141,13 @@ CREATE TYPE TYP_OPERACJI_SKLADU AS ENUM ('ODPIĘCIE', 'PRZYPIĘCIE');
 
 CREATE TABLE ZMIANY_SKLADU (
     id_zmiany INTEGER PRIMARY KEY,
-    id_trasy INTEGER NOT NULL REFERENCES TRASY(id_trasy),
+    id_trasy INTEGER NOT NULL REFERENCES TRASY(id_trasy) ON DELETE CASCADE,
     numer_postoju INTEGER NOT NULL,
     id_wagonu INTEGER NOT NULL REFERENCES WAGONY(id_wagonu),
     typ_operacji TYP_OPERACJI_SKLADU NOT NULL,
-    id_trasy_docelowej INTEGER REFERENCES TRASY(id_trasy),
+    id_trasy_docelowej INTEGER REFERENCES TRASY(id_trasy) ON DELETE SET NULL,
     opis VARCHAR(200),
-    FOREIGN KEY (id_trasy, numer_postoju) REFERENCES POSTOJE(id_trasy, numer_postoju)
+    FOREIGN KEY (id_trasy, numer_postoju) REFERENCES POSTOJE(id_trasy, numer_postoju) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_postoje_id_trasy ON POSTOJE(id_trasy);
@@ -160,8 +160,3 @@ CREATE SEQUENCE seq_trasy;
 CREATE SEQUENCE seq_pociagi;
 CREATE SEQUENCE seq_wagony;
 CREATE SEQUENCE seq_zmiany_skladu;
-
-SELECT setval('seq_trasy', COALESCE((SELECT MAX(id_trasy) FROM trasy), 1));
-SELECT setval('seq_pociagi', COALESCE((SELECT MAX(id_pociagu) FROM pociagi), 1));
-SELECT setval('seq_wagony', COALESCE((SELECT MAX(id_wagonu) FROM wagony), 1));
-SELECT setval('seq_zmiany_skladu', COALESCE((SELECT MAX(id_zmiany) FROM zmiany_skladu), 1));

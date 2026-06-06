@@ -48,9 +48,13 @@ function dodajPostoj() {
         <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button></td>
     `;
 
-    if (tbody.children.length >= 2) {
-        tbody.insertBefore(row, tbody.lastChild);
+    const wiersze = tbody.querySelectorAll('tr');
+
+    if (wiersze.length >= 2) {
+        // Wstawiamy nowy wiersz dokładnie PRZED ostatni istniejący wiersz (wiersze[wiersze.length - 1])
+        tbody.insertBefore(row, wiersze[wiersze.length - 1]);
     } else {
+        // Jeśli są mniej niż 2 wiersze, po prostu doklejamy na koniec
         tbody.appendChild(row);
     }
     
@@ -81,6 +85,8 @@ function godziny() {
     wiersze.forEach((wiersz, index) => {
         const inpPrzyjazd = wiersz.querySelector('.inp-przyjazd');
         const inpOdjazd = wiersz.querySelector('.inp-odjazd');
+
+        if (!inpPrzyjazd || !inpOdjazd) return;
 
         if (index === 0 && inpPrzyjazd) {
             inpPrzyjazd.disabled = true;
@@ -149,7 +155,8 @@ function przeliczKolejnoscWagonow() {
 }
 
 function przygotujFormularzDoWyslania() {
-    document.querySelectorAll('input[type="time"]').forEach(inp => {
+    document.querySelectorAll('input[name="godz_przyjazd[]"], input[name="godz_odjazd[]"]').forEach(inp => {
+        inp.disabled = false;
         inp.readOnly = false;
     });
 

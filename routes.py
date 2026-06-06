@@ -110,11 +110,32 @@ def waliduj_dane_nowej_trasy():
         bledy.append('Dodaj co najmniej jeden wagon do składu.')
 
     infra = request.form.getlist('id_infra[]')
-    if len(infra) < 2:
+    n = len(infra)
+    if n < 2:
         bledy.append('Dodaj co najmniej 2 stacje (start i koniec).')
     for i, inf in enumerate(infra):
         if not inf:
             bledy.append(f'Wybierz peron/tor dla postoju nr {i + 1}.')
+
+    # ==================== NOWA SEKCJA WALIDACJI GODZIN ====================
+    godz_przyjazd = request.form.getlist('godz_przyjazd[]')
+    godz_odjazd = request.form.getlist('godz_odjazd[]')
+    
+    if n >= 2:
+        # Korzystamy z istniejącej funkcji dopasowania, aby operować na indeksach odpowiadających bazie
+        przyjazd_dopasowany, odjazd_dopasowany = dopasuj_listy_postojow(n, godz_przyjazd, godz_odjazd)
+        
+        for i in range(n):
+            # Wszystkie stacje OPRÓCZ PIERWSZEJ (i > 0) muszą mieć wpisaną godzinę przyjazdu
+            if i > 0:
+                if not przyjazd_dopasowany[i] or not przyjazd_dopasowany[i].strip():
+                    bledy.append(f'Podaj godzinę przyjazdu dla stacji nr {i + 1}.')
+            
+            # Wszystkie stacje OPRÓCZ OSTATNIEJ (i < n - 1) muszą mieć wpisaną godzinę odjazdu
+            if i < n - 1:
+                if not odjazd_dopasowany[i] or not odjazd_dopasowany[i].strip():
+                    bledy.append(f'Podaj godzinę odjazdu dla stacji nr {i + 1}.')
+    # ======================================================================
 
     typ = request.form.get('typ_kursowania')
     if typ == 'cykliczna':
@@ -231,6 +252,24 @@ def pobierz_wagony_do_listy_admin():
     return lista
 
 
+def przywroc_wagony_po_zmianie_trasy(id_trasy):
+    """Wywołuje trigger DB przywracający przepięte wagony do macierzystego pociągu."""
+    db.session.execute(
+        text("SELECT fn_przywroc_wagony_po_zmianie_trasy(:id_trasy)"),
+        {'id_trasy': id_trasy},
+    )
+
+
+def pobierz_postoje_ze_zmiana_skladu(id_trasy):
+    """Zwraca zbiór numerów postojów, na których nastąpiła zmiana składu."""
+    rows = db.session.execute(text("""
+        SELECT numer_postoju FROM zmiany_skladu WHERE id_trasy = :id_trasy
+        UNION
+        SELECT numer_postoju FROM zmiany_skladu WHERE id_trasy_docelowej = :id_trasy
+    """), {'id_trasy': id_trasy}).fetchall()
+    return {r[0] for r in rows}
+
+
 def format_minutes(m):
     hours = m // 60
     minutes = m % 60
@@ -307,7 +346,7 @@ def get_wagony_dla_trasy(id_trasy, data_podrozy_obj=None, od_postoju=None, do_po
         seg_od = seg.od_postoju
         seg_do = seg.do_postoju if seg.do_postoju is not None else max_p
 
-        if not (seg_od < do_postoju and seg_do > od_postoju):
+        if not (seg_od <= do_postoju and seg_do >= od_postoju):
             continue
 
         status = 'normalny'
@@ -425,6 +464,7 @@ def register_routes(app):
             ORDER BY p.numer_postoju
         """)
         postoje_rows = db.session.execute(query, {"id_trasy": id_trasy}).fetchall()
+        postoje_ze_zmiana = pobierz_postoje_ze_zmiana_skladu(id_trasy)
         
         harmonogram = []
         for r in postoje_rows:
@@ -434,7 +474,7 @@ def register_routes(app):
 
             harmonogram.append({
                 'numer': r.numer_postoju,
-                'ma_zmiane_skladu': False,
+                'ma_zmiane_skladu': r.numer_postoju in postoje_ze_zmiana,
                 'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
                 'peron': r.numer_peronu if r.numer_peronu is not None else "-",
                 'tor': r.numer_toru if r.numer_toru is not None else "-",
@@ -517,10 +557,19 @@ def register_routes(app):
 
         stacje_cache = {s.id_stacji: s.nazwa_stacji for s in db.session.query(Stacja.id_stacji, Stacja.nazwa_stacji).all()}
 
-        pociagi_rows = db.session.query(Przejazd.id_trasy, Pociag.kategoria, Pociag.nazwa).\
+        pociag_cache = {}
+        trasy_z_pociagiem = db.session.query(Trasa.id_trasy, Pociag.kategoria, Pociag.nazwa).\
+            join(Pociag, Trasa.id_pociagu == Pociag.id_pociagu).\
+            filter(Trasa.id_trasy.in_(aktywne_trasy_ids)).all()
+        for r in trasy_z_pociagiem:
+            pociag_cache[r.id_trasy] = {'kategoria': r.kategoria, 'nazwa': r.nazwa}
+
+        przejazdy_pociagi = db.session.query(Przejazd.id_trasy, Pociag.kategoria, Pociag.nazwa).\
             join(Pociag, Przejazd.id_pociagu == Pociag.id_pociagu).\
-            filter(or_(Przejazd.data_przejazdu == base_date, Przejazd.data_przejazdu == None)).all()
-        pociag_cache = {r.id_trasy: {'kategoria': r.kategoria, 'nazwa': r.nazwa} for r in pociagi_rows}
+            filter(Przejazd.id_trasy.in_(aktywne_trasy_ids), Przejazd.data_przejazdu == base_date).all()
+        for r in przejazdy_pociagi:
+            if r.id_trasy not in pociag_cache:
+                pociag_cache[r.id_trasy] = {'kategoria': r.kategoria, 'nazwa': r.nazwa}
 
         postoje_raw = db.session.query(
             Postoj.id_trasy, Trasa.nazwa_trasy, InfrastrukturaStacji.id_stacji,
@@ -861,7 +910,10 @@ def register_admin(app):
                     if not wagon:
                         flash('Nie znaleziono takiego wagonu.', 'danger')
                     elif db.session.query(Sklad).filter_by(id_wagonu=id_wagonu).first() or \
-                            db.session.query(SkladSegment).filter_by(id_wagonu=id_wagonu).first():
+                            db.session.query(SkladSegment).filter_by(id_wagonu=id_wagonu).first() or \
+                            db.session.execute(text(
+                                "SELECT 1 FROM zmiany_skladu WHERE id_wagonu = :id LIMIT 1"
+                            ), {'id': id_wagonu}).first():
                         flash(
                             f'Wagon #{id_wagonu} jest w składzie pociągu lub segmencie trasy – nie można go usunąć.',
                             'danger'
@@ -977,6 +1029,10 @@ def register_admin(app):
 
             for tid in tras_ids:
                 if tid:
+                    przywroc_wagony_po_zmianie_trasy(tid)
+                    db.session.execute(text(
+                        "DELETE FROM zmiany_skladu WHERE id_trasy = :id OR id_trasy_docelowej = :id"
+                    ), {'id': tid})
                     db.session.query(SkladSegment).filter_by(id_trasy=tid).delete()
                     db.session.query(Postoj).filter_by(id_trasy=tid).delete()
                     db.session.query(TrasaCykliczna).filter_by(id_trasy=tid).delete()
@@ -987,7 +1043,7 @@ def register_admin(app):
             flash("Wybrane trasy (i powiązane z nimi harmonogramy) zostały usunięte. Wagony i Pociągi pozostały w bazie.", "success")
         except Exception as e:
             db.session.rollback()
-            flash(f"Wystąpił błąd podczas usuwania trasy: {str(e)}", "danger")
+            flash(f"Wystąpił błąd podczas usuwania trasy: {czytelny_komunikat_bledu(e)}", "danger")
 
         return redirect('/admin/trasa/od_do')
     
@@ -997,16 +1053,18 @@ def register_admin(app):
             if 'dzien_cyklu' in request.form:
                 dzien = request.form.get('dzien_cyklu')
                 id_trasy = request.form.get('id_trasy', type=int)
+                przywroc_wagony_po_zmianie_trasy(id_trasy)
                 db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy, dzien_kursowania=dzien).delete()
-                msg = f"Usunięto cykliczny kurs: {dzien}."
+                msg = f"Usunięto cykliczny kurs: {dzien}. Przepięcia wagonów powiązanych z trasą zostały zresetowane."
 
             elif 'data_przejazdu' in request.form:
                 data_str = request.form.get('data_przejazdu')
                 id_trasy = request.form.get('id_trasy', type=int)
                 id_pociagu = request.form.get('id_pociagu', type=int)
                 data_obj = datetime.datetime.strptime(data_str, '%Y-%m-%d').date()
+                przywroc_wagony_po_zmianie_trasy(id_trasy)
                 db.session.query(Przejazd).filter_by(id_trasy=id_trasy, id_pociagu=id_pociagu, data_przejazdu=data_obj).delete()
-                msg = f"Usunięto przejazd z dnia {data_str}."
+                msg = f"Usunięto przejazd z dnia {data_str}. Przepięcia wagonów powiązanych z trasą zostały zresetowane."
             
             db.session.commit()
             flash(msg, "success")
@@ -1016,7 +1074,7 @@ def register_admin(app):
             
         except Exception as e:
             db.session.rollback()
-            flash(f"Wystąpił błąd: {str(e)}", "danger")
+            flash(f"Wystąpił błąd: {czytelny_komunikat_bledu(e)}", "danger")
             return redirect('/admin/trasa/od_do')
         
     @app.route('/api/mozliwe_przepiecia')
@@ -1032,6 +1090,8 @@ def register_admin(app):
             FROM POSTOJE p
             JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
             WHERE p.id_trasy = :id_trasy AND i.id_stacji = :id_stacji
+            ORDER BY p.numer_postoju
+            LIMIT 1
         """)
         zrodlo = db.session.execute(query_zrodlo, {'id_trasy': id_trasy, 'id_stacji': id_stacji}).first()
         
@@ -1045,7 +1105,7 @@ def register_admin(app):
             JOIN TYPY_WAGONOW tw ON w.id_typu = tw.id_typu
             WHERE ss.id_trasy = :id_trasy 
               AND ss.od_postoju <= :postoj
-              AND (ss.do_postoju IS NULL OR ss.do_postoju > :postoj)
+              AND (ss.do_postoju IS NULL OR ss.do_postoju >= :postoj)
         """)
         wagony = db.session.execute(query_wagony, {'id_trasy': id_trasy, 'postoj': zrodlo.numer_postoju}).fetchall()
         wagony_list = [{'id': w.id_wagonu, 'nazwa': f"Wagon #{w.id_wagonu} ({w.nazwa})"} for w in wagony]
@@ -1098,12 +1158,18 @@ def register_admin(app):
                     SELECT p.numer_postoju FROM POSTOJE p
                     JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
                     WHERE p.id_trasy = :id_t AND i.id_stacji = :id_s
+                      AND p.godzina_przyjazdu IS NOT NULL
+                    ORDER BY p.numer_postoju
+                    LIMIT 1
                 """), {'id_t': id_trasy_zrodlowej, 'id_s': id_stacji}).fetchone()
                 
                 res_cel = db.session.execute(text("""
                     SELECT p.numer_postoju FROM POSTOJE p
                     JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
                     WHERE p.id_trasy = :id_t AND i.id_stacji = :id_s
+                      AND p.godzina_odjazdu IS NOT NULL
+                    ORDER BY p.numer_postoju
+                    LIMIT 1
                 """), {'id_t': id_trasy_docelowej, 'id_s': id_stacji}).fetchone()
 
                 if not res_zrodlo or not res_cel:
@@ -1113,21 +1179,41 @@ def register_admin(app):
                 num_postoj_zrodlo = res_zrodlo[0]
                 num_postoj_cel = res_cel[0]
 
+                seg_zrodlo = db.session.execute(text("""
+                    SELECT od_postoju, numer_kolejnosci FROM SKLADY_SEGMENTY
+                    WHERE id_trasy = :id_t AND id_wagonu = :id_w
+                      AND od_postoju <= :np
+                      AND (do_postoju IS NULL OR do_postoju >= :np)
+                """), {
+                    'id_t': id_trasy_zrodlowej, 'id_w': id_wagonu, 'np': num_postoj_zrodlo,
+                }).fetchone()
+
+                if not seg_zrodlo:
+                    flash("Wybrany wagon nie jest aktywny na trasie źródłowej w tym postoju.", "danger")
+                    return redirect('/admin/przepinanie_wagonow')
+
                 res_max = db.session.execute(text("""
                     SELECT COALESCE(MAX(numer_kolejnosci), 0) FROM SKLADY_SEGMENTY
-                    WHERE id_trasy = :id_t AND od_postoju = :np
-                """), {'id_t': id_trasy_docelowej, 'np': num_postoj_cel}).fetchone()
+                    WHERE id_trasy = :id_t
+                """), {'id_t': id_trasy_docelowej}).fetchone()
                 max_kol = res_max[0] if res_max else 0
 
                 db.session.execute(text("""
-                    DELETE FROM SKLADY_SEGMENTY
-                    WHERE id_trasy = :id_t AND id_wagonu = :id_w AND od_postoju = :np
-                """), {'id_t': id_trasy_zrodlowej, 'id_w': id_wagonu, 'np': num_postoj_zrodlo})
+                    UPDATE SKLADY_SEGMENTY
+                    SET do_postoju = :np
+                    WHERE id_trasy = :id_t AND id_wagonu = :id_w AND od_postoju = :od_p
+                """), {
+                    'id_t': id_trasy_zrodlowej, 'id_w': id_wagonu,
+                    'np': num_postoj_zrodlo, 'od_p': seg_zrodlo[0],
+                })
 
                 db.session.execute(text("""
                     INSERT INTO SKLADY_SEGMENTY (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejnosci)
                     VALUES (:id_t, :id_w, :od_p, NULL, :kol)
-                """), {'id_t': id_trasy_docelowej, 'id_w': id_wagonu, 'od_p': num_postoj_cel, 'kol': max_kol + 1})
+                """), {
+                    'id_t': id_trasy_docelowej, 'id_w': id_wagonu,
+                    'od_p': num_postoj_cel, 'kol': max_kol + 1,
+                })
 
                 db.session.execute(text("""
                     INSERT INTO ZMIANY_SKLADU (id_trasy, numer_postoju, id_wagonu, typ_operacji, id_trasy_docelowej, opis)
@@ -1153,7 +1239,7 @@ def register_admin(app):
                 
             except Exception as e:
                 db.session.rollback()
-                flash(f"Wystąpił błąd bazy danych: {str(e)}", "danger")
+                flash(f"Wystąpił błąd bazy danych: {czytelny_komunikat_bledu(e)}", "danger")
             
             return redirect('/admin/przepinanie_wagonow')
 
@@ -1188,8 +1274,8 @@ def register_admin(app):
                 
                 trasa.nazwa_trasy = request.form.get('nazwa_trasy')
 
-                # 2. Czyszczenie starych zależności (bezpieczne usunięcie postojów i wagonów w celu nadpisania)
-                db.session.execute(text("DELETE FROM ZMIANY_SKLADU WHERE id_trasy = :id_trasy"), {'id_trasy': id_trasy})
+                # 2. Przywrócenie przepiętych wagonów, potem czyszczenie starych zależności
+                przywroc_wagony_po_zmianie_trasy(id_trasy)
                 db.session.query(SkladSegment).filter_by(id_trasy=id_trasy).delete()
                 db.session.query(Postoj).filter_by(id_trasy=id_trasy).delete()
                 db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy).delete()

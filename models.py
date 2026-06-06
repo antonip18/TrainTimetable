@@ -164,3 +164,17 @@ class SkladSegment(db.Model):
     numer_kolejnosci = db.Column(db.Integer, nullable=False)
 
     wagon = db.relationship('Wagon', backref='segmenty', lazy=True)
+
+
+class ZmianaSkladu(db.Model):
+    __tablename__ = 'zmiany_skladu'
+    id_zmiany = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_trasy = db.Column(db.Integer, db.ForeignKey('trasy.id_trasy'), nullable=False)
+    numer_postoju = db.Column(db.Integer, nullable=False)
+    id_wagonu = db.Column(db.Integer, db.ForeignKey('wagony.id_wagonu'), nullable=False)
+    typ_operacji = db.Column(
+        db.Enum('ODPIĘCIE', 'PRZYPIĘCIE', name='typ_operacji_skladu'),
+        nullable=False,
+    )
+    id_trasy_docelowej = db.Column(db.Integer, db.ForeignKey('trasy.id_trasy'), nullable=True)
+    opis = db.Column(db.String(200), nullable=True)
