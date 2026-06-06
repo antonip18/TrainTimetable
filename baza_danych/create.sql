@@ -140,7 +140,7 @@ CREATE TABLE SKLADY_SEGMENTY (
 CREATE TYPE TYP_OPERACJI_SKLADU AS ENUM ('ODPIĘCIE', 'PRZYPIĘCIE');
 
 CREATE TABLE ZMIANY_SKLADU (
-    id_zmiany SERIAL PRIMARY KEY,
+    id_zmiany INTEGER PRIMARY KEY,
     id_trasy INTEGER NOT NULL REFERENCES TRASY(id_trasy),
     numer_postoju INTEGER NOT NULL,
     id_wagonu INTEGER NOT NULL REFERENCES WAGONY(id_wagonu),
@@ -155,16 +155,13 @@ CREATE INDEX idx_sklady_segmenty_trasa ON SKLADY_SEGMENTY(id_trasy);
 CREATE INDEX idx_postoje_id_peronu_toru ON POSTOJE(id_peronu_toru);
 CREATE INDEX idx_infra_id_stacji ON INFRASTRUKTURA_STACJI(id_stacji);
 CREATE INDEX idx_przejazdy_trasa_data ON PRZEJAZDY(id_trasy, data_przejazdu);
-CREATE INDEX idx_trasy_cykl_id_dzien ON TRASY_CYKLICZNE(id_trasy, dzien_kursowania);
 
 CREATE SEQUENCE seq_trasy;
 CREATE SEQUENCE seq_pociagi;
 CREATE SEQUENCE seq_wagony;
-SELECT setval('seq_trasy', (SELECT MAX(id_trasy) FROM trasy))
-WHERE EXISTS (SELECT 1 FROM trasy LIMIT 1);
+CREATE SEQUENCE seq_zmiany_skladu;
 
-SELECT setval('seq_pociagi', (SELECT MAX(id_pociagu) FROM pociagi))
-WHERE EXISTS (SELECT 1 FROM pociagi LIMIT 1);
-
-SELECT setval('seq_wagony', (SELECT MAX(id_wagonu) FROM wagony))
-WHERE EXISTS (SELECT 1 FROM wagony LIMIT 1);
+SELECT setval('seq_trasy', COALESCE((SELECT MAX(id_trasy) FROM trasy), 1));
+SELECT setval('seq_pociagi', COALESCE((SELECT MAX(id_pociagu) FROM pociagi), 1));
+SELECT setval('seq_wagony', COALESCE((SELECT MAX(id_wagonu) FROM wagony), 1));
+SELECT setval('seq_zmiany_skladu', COALESCE((SELECT MAX(id_zmiany) FROM zmiany_skladu), 1));

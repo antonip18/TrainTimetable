@@ -31,6 +31,7 @@
             <div class="sekcja">
                 <h4>Trasa: {{ trasa_tam.nazwa_trasy }}</h4>
                 <p>Pociąg: {{ pociag_tam.nazwa if pociag_tam else 'Brak' }}</p>
+                <a href="/admin/trasa/edytuj/{{ trasa_tam.id_trasy }}" class="btn" style="background-color: #f59e0b; margin-top: 10px; display: inline-block;">✏️ Edytuj pełne dane trasy (postoje, wagony)</a>
                 <hr>
                 
                 <h5>Cykliczne kursy (dni tygodnia):</h5>

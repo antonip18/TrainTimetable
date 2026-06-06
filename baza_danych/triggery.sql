@@ -8,13 +8,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION fn_nadaj_id_trasy() IS
-    'Nadaje automatyczne id_trasy z sekwencji seq_trasy, gdy aplikacja nie poda ID.';
-
 CREATE TRIGGER trg_nadaj_id_trasy
-    BEFORE INSERT ON trasy
-    FOR EACH ROW
-    EXECUTE PROCEDURE fn_nadaj_id_trasy();
+BEFORE INSERT ON trasy
+FOR EACH ROW
+EXECUTE PROCEDURE fn_nadaj_id_trasy();
 
 CREATE OR REPLACE FUNCTION fn_nadaj_id_pociagu()
 RETURNS TRIGGER AS $$
@@ -26,13 +23,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION fn_nadaj_id_pociagu() IS
-    'Nadaje automatyczne id_pociagu z sekwencji seq_pociagi.';
-
 CREATE TRIGGER trg_nadaj_id_pociagu
-    BEFORE INSERT ON pociagi
-    FOR EACH ROW
-    EXECUTE PROCEDURE fn_nadaj_id_pociagu();
+BEFORE INSERT ON pociagi
+FOR EACH ROW
+EXECUTE PROCEDURE fn_nadaj_id_pociagu();
 
 CREATE OR REPLACE FUNCTION fn_nadaj_id_wagonu()
 RETURNS TRIGGER AS $$
@@ -44,13 +38,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION fn_nadaj_id_wagonu() IS
-    'Nadaje automatyczne id_wagonu z sekwencji seq_wagony.';
-
 CREATE TRIGGER trg_nadaj_id_wagonu
-    BEFORE INSERT ON wagony
-    FOR EACH ROW
-    EXECUTE PROCEDURE fn_nadaj_id_wagonu();
+BEFORE INSERT ON wagony
+FOR EACH ROW
+EXECUTE PROCEDURE fn_nadaj_id_wagonu();
+
+
+CREATE OR REPLACE FUNCTION fn_nadaj_id_zmiany_skladu()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.id_zmiany := nextval('seq_zmiany_skladu');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_nadaj_id_zmiany_skladu
+BEFORE INSERT ON zmiany_skladu
+FOR EACH ROW
+EXECUTE PROCEDURE fn_nadaj_id_zmiany_skladu();
+
+
+
+
+
+
+
+
 
 CREATE OR REPLACE FUNCTION fn_waliduj_postoj()
 RETURNS TRIGGER AS $$
@@ -169,13 +182,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION fn_waliduj_postoj() IS
-    'Sprawdza poprawność postoju: pierwsza/ostatnia stacja, kolejność numerów i godzin.';
-
 CREATE TRIGGER trg_waliduj_postoj
-    BEFORE INSERT OR UPDATE ON postoje
-    FOR EACH ROW
-    EXECUTE PROCEDURE fn_waliduj_postoj();
+BEFORE INSERT OR UPDATE ON postoje
+FOR EACH ROW
+EXECUTE PROCEDURE fn_waliduj_postoj();
 
 CREATE OR REPLACE FUNCTION fn_waliduj_ostatni_postoj()
 RETURNS TRIGGER AS $$
@@ -199,10 +209,10 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE CONSTRAINT TRIGGER trg_waliduj_ostatni_postoj
-    AFTER INSERT OR UPDATE ON postoje
-    DEFERRABLE INITIALLY DEFERRED
-    FOR EACH ROW
-    EXECUTE PROCEDURE fn_waliduj_ostatni_postoj();
+AFTER INSERT OR UPDATE ON postoje
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE PROCEDURE fn_waliduj_ostatni_postoj();
 
 CREATE OR REPLACE FUNCTION fn_blokuj_przejazd_gdy_cykliczna()
 RETURNS TRIGGER AS $$
@@ -346,3 +356,113 @@ CREATE TRIGGER poprawnosc_peronu
 BEFORE INSERT OR UPDATE ON postoje
 FOR EACH ROW
 EXECUTE FUNCTION poprawnosc_peronu();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION poprawnosc_wagonu_sklady()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_do_postoju INTEGER;
+    v_start_min INTEGER;
+    v_end_min INTEGER;
+    id_trasy_konfliktowej INTEGER;
+    data_konfliktowa DATE;
+BEGIN
+    IF NEW.do_postoju IS NULL THEN
+        SELECT MAX(numer_postoju) INTO v_do_postoju FROM postoje WHERE id_trasy = NEW.id_trasy;
+    ELSE
+        v_do_postoju := NEW.do_postoju;
+    END IF;
+
+    SELECT minuty_od_dnia_startu_dla_odjazdu(dzien_przyjazdu_offset, godzina_przyjazdu, dzien_odjazdu_offset, godzina_odjazdu)
+    INTO v_start_min 
+    FROM postoje WHERE id_trasy = NEW.id_trasy AND numer_postoju = NEW.od_postoju;
+
+    SELECT minuty_od_dnia_startu_dla_przyjazdu(dzien_przyjazdu_offset, godzina_przyjazdu, dzien_odjazdu_offset, godzina_odjazdu)
+    INTO v_end_min 
+    FROM postoje WHERE id_trasy = NEW.id_trasy AND numer_postoju = v_do_postoju;
+
+    SELECT s.id_trasy, pr_exist.data_przejazdu INTO id_trasy_konfliktowej, data_konfliktowa
+    FROM SKLADY_SEGMENTY s
+    JOIN PRZEJAZDY pr_exist ON s.id_trasy = pr_exist.id_trasy
+    JOIN POSTOJE p_od ON s.id_trasy = p_od.id_trasy AND p_od.numer_postoju = s.od_postoju
+    JOIN POSTOJE p_do ON s.id_trasy = p_do.id_trasy AND p_do.numer_postoju = COALESCE(s.do_postoju, (SELECT MAX(numer_postoju) FROM postoje WHERE id_trasy = s.id_trasy))
+    JOIN PRZEJAZDY pr_new ON pr_new.id_trasy = NEW.id_trasy
+    WHERE s.id_wagonu = NEW.id_wagonu
+      AND NOT (s.id_trasy = NEW.id_trasy AND s.od_postoju = NEW.od_postoju AND pr_exist.data_przejazdu = pr_new.data_przejazdu)
+      AND (pr_exist.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_odjazdu(p_od.dzien_przyjazdu_offset, p_od.godzina_przyjazdu, p_od.dzien_odjazdu_offset, p_od.godzina_odjazdu) * interval '1 minute')
+          < 
+          (pr_new.data_przejazdu::timestamp + v_end_min * interval '1 minute')
+      AND (pr_exist.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_przyjazdu(p_do.dzien_przyjazdu_offset, p_do.godzina_przyjazdu, p_do.dzien_odjazdu_offset, p_do.godzina_odjazdu) * interval '1 minute')
+          > 
+          (pr_new.data_przejazdu::timestamp + v_start_min * interval '1 minute')
+    LIMIT 1;
+
+    IF id_trasy_konfliktowej IS NOT NULL THEN
+        RAISE EXCEPTION 'Konflikt wagonu! Wagon % jest w użyciu na trasie % w powiązanym czasie (np. przy przejeździe wystartowanym %).', 
+            NEW.id_wagonu, id_trasy_konfliktowej, data_konfliktowa;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_poprawnosc_wagonu_sklady
+BEFORE INSERT OR UPDATE ON SKLADY_SEGMENTY
+FOR EACH ROW
+EXECUTE FUNCTION poprawnosc_wagonu_sklady();
+
+
+CREATE OR REPLACE FUNCTION poprawnosc_wagonu_przejazdy()
+RETURNS TRIGGER AS $$
+DECLARE
+    id_wagonu_konfliktowego INTEGER;
+    id_trasy_konfliktowej INTEGER;
+BEGIN
+    SELECT s_new.id_wagonu, s_exist.id_trasy INTO id_wagonu_konfliktowego, id_trasy_konfliktowej
+    FROM SKLADY_SEGMENTY s_new
+    JOIN POSTOJE p_new_od ON s_new.id_trasy = p_new_od.id_trasy AND p_new_od.numer_postoju = s_new.od_postoju
+    JOIN POSTOJE p_new_do ON s_new.id_trasy = p_new_do.id_trasy AND p_new_do.numer_postoju = COALESCE(s_new.do_postoju, (SELECT MAX(numer_postoju) FROM postoje WHERE id_trasy = s_new.id_trasy))
+    -- Szukamy wszystkich wagonów podpiętych pod obecną trasę, a potem gdzie indziej są one użyte:
+    JOIN SKLADY_SEGMENTY s_exist ON s_exist.id_wagonu = s_new.id_wagonu 
+    JOIN POSTOJE p_ex_od ON s_exist.id_trasy = p_ex_od.id_trasy AND p_ex_od.numer_postoju = s_exist.od_postoju
+    JOIN POSTOJE p_ex_do ON s_exist.id_trasy = p_ex_do.id_trasy AND p_ex_do.numer_postoju = COALESCE(s_exist.do_postoju, (SELECT MAX(numer_postoju) FROM postoje WHERE id_trasy = s_exist.id_trasy))
+    JOIN PRZEJAZDY pr_exist ON s_exist.id_trasy = pr_exist.id_trasy
+    WHERE s_new.id_trasy = NEW.id_trasy
+      -- Pomijamy ten konkretny rekord, jeśli robimy UPDATE istniejącej daty
+      AND NOT (s_new.id_trasy = s_exist.id_trasy AND s_new.od_postoju = s_exist.od_postoju AND NEW.data_przejazdu = pr_exist.data_przejazdu)
+      -- Warunek nakładania się osi czasu (Start_Istniejący < Koniec_Nowy ORAZ Koniec_Istniejący > Start_Nowy):
+      AND (pr_exist.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_odjazdu(p_ex_od.dzien_przyjazdu_offset, p_ex_od.godzina_przyjazdu, p_ex_od.dzien_odjazdu_offset, p_ex_od.godzina_odjazdu) * interval '1 minute')
+          < 
+          (NEW.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_przyjazdu(p_new_do.dzien_przyjazdu_offset, p_new_do.godzina_przyjazdu, p_new_do.dzien_odjazdu_offset, p_new_do.godzina_odjazdu) * interval '1 minute')
+      AND (pr_exist.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_przyjazdu(p_ex_do.dzien_przyjazdu_offset, p_ex_do.godzina_przyjazdu, p_ex_do.dzien_odjazdu_offset, p_ex_do.godzina_odjazdu) * interval '1 minute')
+          > 
+          (NEW.data_przejazdu::timestamp + minuty_od_dnia_startu_dla_odjazdu(p_new_od.dzien_przyjazdu_offset, p_new_od.godzina_przyjazdu, p_new_od.dzien_odjazdu_offset, p_new_od.godzina_odjazdu) * interval '1 minute')
+    LIMIT 1;
+
+    IF id_wagonu_konfliktowego IS NOT NULL THEN
+        RAISE EXCEPTION 'Konflikt wagonu! Dodanie przejazdu w dniu % powoduje, że wagon % byłby w tym samym czasie rozdarty między trasą % a %.', 
+            NEW.data_przejazdu, id_wagonu_konfliktowego, NEW.id_trasy, id_trasy_konfliktowej;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_poprawnosc_wagonu_przejazdy
+BEFORE INSERT OR UPDATE ON PRZEJAZDY
+FOR EACH ROW
+EXECUTE FUNCTION poprawnosc_wagonu_przejazdy();

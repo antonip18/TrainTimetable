@@ -1094,52 +1094,63 @@ def register_admin(app):
                 return redirect('/admin/przepinanie_wagonow')
 
             try:
-                postoj_zrodlo = db.session.execute(text("""
-                    SELECT p.numer_postoju FROM POSTOJE p 
-                    JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id 
-                    WHERE p.id_trasy = :t AND i.id_stacji = :s
-                """), {'t': id_trasy_zrodlowej, 's': id_stacji}).first()
+                res_zrodlo = db.session.execute(text("""
+                    SELECT p.numer_postoju FROM POSTOJE p
+                    JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+                    WHERE p.id_trasy = :id_t AND i.id_stacji = :id_s
+                """), {'id_t': id_trasy_zrodlowej, 'id_s': id_stacji}).fetchone()
+                
+                res_cel = db.session.execute(text("""
+                    SELECT p.numer_postoju FROM POSTOJE p
+                    JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+                    WHERE p.id_trasy = :id_t AND i.id_stacji = :id_s
+                """), {'id_t': id_trasy_docelowej, 'id_s': id_stacji}).fetchone()
 
-                postoj_cel = db.session.execute(text("""
-                    SELECT p.numer_postoju FROM POSTOJE p 
-                    JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id 
-                    WHERE p.id_trasy = :t AND i.id_stacji = :s
-                """), {'t': id_trasy_docelowej, 's': id_stacji}).first()
-
-                if not postoj_zrodlo or not postoj_cel:
-                    flash("Błąd konfiguracji postojów.", "danger")
+                if not res_zrodlo or not res_cel:
+                    flash("Nie znaleziono odpowiednich postojów dla podanej stacji na wybranych trasach.", "danger")
                     return redirect('/admin/przepinanie_wagonow')
 
-                num_postoj_zrodlo = postoj_zrodlo[0]
-                num_postoj_cel = postoj_cel[0]
+                num_postoj_zrodlo = res_zrodlo[0]
+                num_postoj_cel = res_cel[0]
+
+                res_max = db.session.execute(text("""
+                    SELECT COALESCE(MAX(numer_kolejnosci), 0) FROM SKLADY_SEGMENTY
+                    WHERE id_trasy = :id_t AND od_postoju = :np
+                """), {'id_t': id_trasy_docelowej, 'np': num_postoj_cel}).fetchone()
+                max_kol = res_max[0] if res_max else 0
 
                 db.session.execute(text("""
-                    UPDATE SKLADY_SEGMENTY 
-                    SET do_postoju = :nowy_do
-                    WHERE id_trasy = :id_t AND id_wagonu = :id_w AND od_postoju <= :nowy_do 
-                      AND (do_postoju IS NULL OR do_postoju > :nowy_do)
-                """), {'nowy_do': num_postoj_zrodlo, 'id_t': id_trasy_zrodlowej, 'id_w': id_wagonu})
+                    DELETE FROM SKLADY_SEGMENTY
+                    WHERE id_trasy = :id_t AND id_wagonu = :id_w AND od_postoju = :np
+                """), {'id_t': id_trasy_zrodlowej, 'id_w': id_wagonu, 'np': num_postoj_zrodlo})
 
-                max_kol = db.session.execute(text("SELECT COALESCE(MAX(numer_kolejnosci), 0) FROM SKLADY_SEGMENTY WHERE id_trasy = :id_t"), {'id_t': id_trasy_docelowej}).scalar()
-                
                 db.session.execute(text("""
-                    INSERT INTO SKLADY_SEGMENTY (id_trasy, id_wagonu, od_postoju, numer_kolejnosci)
-                    VALUES (:id_t, :id_w, :od_p, :kol)
+                    INSERT INTO SKLADY_SEGMENTY (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejnosci)
+                    VALUES (:id_t, :id_w, :od_p, NULL, :kol)
                 """), {'id_t': id_trasy_docelowej, 'id_w': id_wagonu, 'od_p': num_postoj_cel, 'kol': max_kol + 1})
 
                 db.session.execute(text("""
                     INSERT INTO ZMIANY_SKLADU (id_trasy, numer_postoju, id_wagonu, typ_operacji, id_trasy_docelowej, opis)
                     VALUES (:id_tz, :np, :id_w, 'ODPIĘCIE', :id_tc, 'Przepięcie manewrowe')
-                """), {'id_tz': id_trasy_zrodlowej, 'np': num_postoj_zrodlo, 'id_w': id_wagonu, 'id_tc': id_trasy_docelowej})
+                """), {
+                    'id_tz': id_trasy_zrodlowej, 
+                    'np': num_postoj_zrodlo, 
+                    'id_w': id_wagonu, 
+                    'id_tc': id_trasy_docelowej
+                })
 
                 db.session.execute(text("""
                     INSERT INTO ZMIANY_SKLADU (id_trasy, numer_postoju, id_wagonu, typ_operacji, opis)
                     VALUES (:id_tc, :npc, :id_w, 'PRZYPIĘCIE', 'Przyjęto z innej trasy')
-                """), {'id_tc': id_trasy_docelowej, 'npc': num_postoj_cel, 'id_w': id_wagonu})
+                """), {
+                    'id_tc': id_trasy_docelowej, 
+                    'npc': num_postoj_cel, 
+                    'id_w': id_wagonu
+                })
 
                 db.session.commit()
                 flash("Pomyślnie odpięto i przypięto wagon do nowej trasy!", "success")
-            
+                
             except Exception as e:
                 db.session.rollback()
                 flash(f"Wystąpił błąd bazy danych: {str(e)}", "danger")
@@ -1149,3 +1160,101 @@ def register_admin(app):
         stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         trasy = db.session.query(Trasa).order_by(Trasa.nazwa_trasy).all()
         return render_template('admin_przepinanie_wagonow.html', stacje=stacje, trasy=trasy)
+    
+    @app.route('/admin/trasa/edytuj/<int:id_trasy>', methods=['GET', 'POST'])
+    def admin_edytuj_trasa(id_trasy):
+        trasa = db.session.get(Trasa, id_trasy)
+        if not trasa:
+            flash("Nie znaleziono takiej trasy.", "danger")
+            return redirect('/admin/trasa/od_do')
+
+        if trasa.id_pociagu:
+            pociag = db.session.get(Pociag, trasa.id_pociagu)
+        else:
+            przejazd = db.session.query(Przejazd).filter_by(id_trasy=id_trasy).first()
+            pociag = db.session.get(Pociag, przejazd.id_pociagu) if przejazd else None
+
+        if not pociag:
+            flash("Trasa nie ma przypisanego pociągu, edycja niemożliwa.", "danger")
+            return redirect('/admin/trasa/od_do')
+
+        if request.method == 'POST':
+            try:
+                # 1. Aktualizacja Pociągu i Trasy
+                nazwa_wspolna = request.form.get('nazwa_pociagu').strip()
+                num_pociagu = request.form.get('numer_pociagu').strip()
+                pociag.nazwa = f"{nazwa_wspolna} {num_pociagu}".strip() if num_pociagu else nazwa_wspolna
+                pociag.kategoria = request.form.get('kategoria_pociagu')
+                
+                trasa.nazwa_trasy = request.form.get('nazwa_trasy')
+
+                # 2. Czyszczenie starych zależności (bezpieczne usunięcie postojów i wagonów w celu nadpisania)
+                db.session.execute(text("DELETE FROM ZMIANY_SKLADU WHERE id_trasy = :id_trasy"), {'id_trasy': id_trasy})
+                db.session.query(SkladSegment).filter_by(id_trasy=id_trasy).delete()
+                db.session.query(Postoj).filter_by(id_trasy=id_trasy).delete()
+                db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy).delete()
+                db.session.query(Przejazd).filter_by(id_trasy=id_trasy).delete()
+                db.session.query(Sklad).filter_by(id_pociagu=pociag.id_pociagu).delete()
+
+                # 3. Zapisanie nowych postojów i wagonów korzystając z istniejących funkcji pomocniczych
+                zapisz_postoje_dla_trasy(trasa.id_trasy)
+                
+                wagony_id = [int(w) for w in request.form.getlist('id_typu_wagonu[]') if w]
+                zapisz_sklad_dla_pociagu(pociag.id_pociagu, wagony_id)
+                db.session.flush()
+                
+                zapisz_segmenty_skladu_dla_trasy(trasa.id_trasy, pociag.id_pociagu)
+
+                # 4. Zapisanie nowego harmonogramu
+                typ_kursowania = request.form.get('typ_kursowania')
+                if typ_kursowania == 'cykliczna':
+                    dni = request.form.getlist('dni[]')
+                    for dzien in dni:
+                        db.session.add(TrasaCykliczna(id_trasy=trasa.id_trasy, dzien_kursowania=dzien))
+                else:
+                    daty = request.form.getlist('konkretne_daty[]')
+                    for d_str in daty:
+                        if d_str:
+                            data_obj = datetime.datetime.strptime(d_str, '%Y-%m-%d').date()
+                            db.session.add(Przejazd(id_trasy=trasa.id_trasy, id_pociagu=pociag.id_pociagu, data_przejazdu=data_obj))
+
+                db.session.commit()
+                flash('Trasa została pomyślnie zaktualizowana!', 'success')
+                return redirect(f'/admin/trasa/zarzadzaj/{id_trasy}')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Wystąpił błąd podczas edycji trasy: {czytelny_komunikat_bledu(e)}', 'danger')
+
+        # GET - Pobieranie danych do formularza (przekazanie starych wartości)
+        stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
+        typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
+        
+        postoje_db = db.session.execute(text("""
+            SELECT p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu, 
+                   i.id_stacji, i.id as id_infra
+            FROM POSTOJE p
+            JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+            WHERE p.id_trasy = :id_trasy
+            ORDER BY p.numer_postoju
+        """), {'id_trasy': id_trasy}).fetchall()
+        
+        segmenty_db = db.session.query(SkladSegment, Wagon).\
+            join(Wagon, SkladSegment.id_wagonu == Wagon.id_wagonu).\
+            filter(SkladSegment.id_trasy == id_trasy).\
+            order_by(SkladSegment.numer_kolejnosci).all()
+        wagony_db = [seg.Wagon.id_typu for seg in segmenty_db]
+        
+        cykle_db = [c.dzien_kursowania for c in db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy).all()]
+        przejazdy_db = [p.data_przejazdu.strftime('%Y-%m-%d') for p in db.session.query(Przejazd).filter_by(id_trasy=id_trasy).all()]
+
+        # Parsowanie nazwy pociągu (rozdzielenie "Pendolino 41010" na "Pendolino" i "41010")
+        nazwa_czlon = pociag.nazwa.rsplit(' ', 1)
+        pociag_handlowa = nazwa_czlon[0] if len(nazwa_czlon) == 2 and nazwa_czlon[1].isdigit() else pociag.nazwa
+        pociag_numer = nazwa_czlon[1] if len(nazwa_czlon) == 2 and nazwa_czlon[1].isdigit() else ""
+
+        return render_template('admin_edytuj_trasa.html',
+                               trasa=trasa, pociag=pociag,
+                               pociag_handlowa=pociag_handlowa, pociag_numer=pociag_numer,
+                               stacje=stacje, typy_wagonow=typy_wagonow,
+                               postoje_db=postoje_db, wagony_db=wagony_db,
+                               cykle=cykle_db, przejazdy=przejazdy_db)

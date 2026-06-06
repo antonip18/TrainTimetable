@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Edytuj Trasę</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_nowa_trasa_style.css') }}">
+</head>
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages" style="margin-bottom: 20px;">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }}" 
+                    style="padding: 15px; border: 1px solid transparent; border-radius: 4px; {% if category == 'success' %} color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6; {% else %} color: #a94442; background-color: #f2dede; border-color: #ebccd1; {% endif %}">
+                <strong>{% if category == 'success' %}Sukces!{% else %}Uwaga!{% endif %}</strong> {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <a href="/admin/trasa/zarzadzaj/{{ trasa.id_trasy }}" class="btn btn-secondary" style="margin-bottom: 20px;">&larr; Wróć do podglądu</a>
+        <h2>Edycja Połączenia: {{ trasa.nazwa_trasy }}</h2>
+        
+        <form id="form-nowa-trasa" action="/admin/trasa/edytuj/{{ trasa.id_trasy }}" method="POST">
+
+            <div class="sekcja">
+                <h3>1. Rodzaj Kursowania</h3>
+                <div>
+                    {% set typ = 'cykliczna' if cykle else 'daty' %}
+                    <label class="inline-label"><input type="radio" name="typ_kursowania" value="cykliczna" {% if typ == 'cykliczna' %}checked{% endif %} onclick="toggleHarmonogram('cykliczna')"> Cykliczna (dni tygodnia)</label>
+                    <label class="inline-label"><input type="radio" name="typ_kursowania" value="daty" {% if typ == 'daty' %}checked{% endif %} onclick="toggleHarmonogram('daty')"> Wybrane daty (najbliższy miesiąc)</label>
+                    
+                    <div id="dni_tygodnia_div" style="margin-top: 15px; display: {% if typ == 'cykliczna' %}block{% else %}none{% endif %};">
+                        {% for d, label in [('poniedziałek','Pon'), ('wtorek','Wto'), ('środa','Śro'), ('czwartek','Czw'), ('piątek','Pią'), ('sobota','Sob'), ('niedziela','Nie')] %}
+                            <label class="inline-label"><input type="checkbox" name="dni[]" value="{{ d }}" {% if d in cykle %}checked{% endif %}> {{ label }}</label>
+                        {% endfor %}
+                    </div>
+                    <div id="konkretne_daty_div" style="display: {% if typ == 'daty' %}block{% else %}none{% endif %}; margin-top: 15px;">
+                        <div id="daty_lista">
+                            {% if typ == 'daty' %}
+                                {% for data_val in przejazdy %}
+                                    <div class="date-item">
+                                        <input type="date" name="konkretne_daty[]" class="date-input-field" value="{{ data_val }}" required>
+                                        <button type="button" class="btn btn-danger" style="padding: 10px 14px;" onclick="this.closest('div').remove()">Usuń</button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn btn-secondary" style="margin-top: 12px;" onclick="dodajDate()">+ Dodaj datę</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sekcja">
+                <h3>2. Harmonogram Postojów</h3>
+                <p style="color:#64748b; font-size:13px; margin-bottom:15px;">
+                    Uważaj: Zmiana stacji pośrodku może zresetować przepięcia (manewry) ustalone dla tej trasy.
+                </p>
+                <div style="margin-bottom: 35px;">
+                    <table id="postoje_table">
+                        <thead>
+                            <tr>
+                                <th>Stacja</th>
+                                <th>Peron / Tor</th>
+                                <th>Przyjazd</th>
+                                <th>Odjazd</th>
+                                <th style="width: 90px;">Akcja</th>
+                            </tr>
+                        </thead>
+                        <tbody id="postoje_tbody">
+                            {% for postoj in postoje_db %}
+                                <tr>
+                                    <td>
+                                        <select name="id_stacji[]" required onchange="pobierzInfrastrukture(this)">
+                                            <option value="">Wybierz stację...</option>
+                                            {% for s in stacje %}
+                                                <option value="{{ s.id_stacji }}" {% if postoj.id_stacji == s.id_stacji %}selected{% endif %}>{{ s.nazwa_stacji }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="id_infra[]" class="infra-select" required>
+                                            <option value="{{ postoj.id_infra }}" selected>Wczytywanie...</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="time" name="godz_przyjazd[]" class="inp-przyjazd" value="{{ postoj.godzina_przyjazdu.strftime('%H:%M') if postoj.godzina_przyjazdu else '' }}"></td>
+                                    <td><input type="time" name="godz_odjazd[]" class="inp-odjazd" value="{{ postoj.godzina_odjazdu.strftime('%H:%M') if postoj.godzina_odjazdu else '' }}"></td>
+                                    <td><button type="button" class="btn btn-danger btn-usun-postoj" onclick="usunPostoj(this)">Usuń</button></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn" onclick="dodajPostoj()">+ Dodaj stację pośrednią</button>
+                </div>
+            </div>
+
+            <div class="sekcja">
+                <h3>3. Skład Wagonowy</h3>
+                <div id="wagony_lista">
+                    {% for wagon_id in wagony_db %}
+                        <div class="wagon-item">
+                            <strong class="nr-wagonu-label" style="min-width: 90px; color: #475569;">Wagon</strong>
+                            <select name="id_typu_wagonu[]" required>
+                                <option value="">Wybierz typ wagonu...</option>
+                                {% for w in typy_wagonow %}
+                                    <option value="{{ w.id_typu }}" {% if wagon_id == w.id_typu %}selected{% endif %}>{{ w.nazwa }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-danger" onclick="this.closest('.wagon-item').remove(); przeliczKolejnoscWagonow();">Usuń</button>
+                        </div>
+                    {% endfor %}
+                </div>
+                <br>
+                <button type="button" class="btn" onclick="dodajWagon()">+ Dodaj wagon na koniec składu</button>
+            </div>
+
+            <button type="submit" class="btn" style="background: #10b981; font-size: 16px; width: 100%; padding: 15px; border-radius: 8px;">ZAPISZ ZMIANY W TRASIE</button>
+        </form>
+    </div>
+
+    <script>
+        window.AppConfig = {
+            stacjeOptions: `
+                <option value="">Wybierz stację...</option>
+                {% for s in stacje %}
+                    <option value="{{ s.id_stacji }}">{{ s.nazwa_stacji }}</option>
+                {% endfor %}
+            `,
+            wagonyOptions: `
+                <option value="">Wybierz typ wagonu...</option>
+                {% for w in typy_wagonow %}
+                    <option value="{{ w.id_typu }}">{{ w.nazwa }}</option>
+                {% endfor %}
+            `,
+            maStareDane: true 
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/admin_nowa_trasa.js') }}"></script>
+</body>
+</html>

@@ -20,3 +20,4 @@ drop table WOJEWODZTWA cascade;
 drop sequence seq_trasy;
 drop sequence seq_pociagi;
 drop sequence seq_wagony;
+drop sequence seq_zmiany_skladu;
