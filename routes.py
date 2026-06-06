@@ -117,25 +117,20 @@ def waliduj_dane_nowej_trasy():
         if not inf:
             bledy.append(f'Wybierz peron/tor dla postoju nr {i + 1}.')
 
-    # ==================== NOWA SEKCJA WALIDACJI GODZIN ====================
     godz_przyjazd = request.form.getlist('godz_przyjazd[]')
     godz_odjazd = request.form.getlist('godz_odjazd[]')
     
     if n >= 2:
-        # Korzystamy z istniejącej funkcji dopasowania, aby operować na indeksach odpowiadających bazie
         przyjazd_dopasowany, odjazd_dopasowany = dopasuj_listy_postojow(n, godz_przyjazd, godz_odjazd)
         
         for i in range(n):
-            # Wszystkie stacje OPRÓCZ PIERWSZEJ (i > 0) muszą mieć wpisaną godzinę przyjazdu
             if i > 0:
                 if not przyjazd_dopasowany[i] or not przyjazd_dopasowany[i].strip():
                     bledy.append(f'Podaj godzinę przyjazdu dla stacji nr {i + 1}.')
             
-            # Wszystkie stacje OPRÓCZ OSTATNIEJ (i < n - 1) muszą mieć wpisaną godzinę odjazdu
             if i < n - 1:
                 if not odjazd_dopasowany[i] or not odjazd_dopasowany[i].strip():
                     bledy.append(f'Podaj godzinę odjazdu dla stacji nr {i + 1}.')
-    # ======================================================================
 
     typ = request.form.get('typ_kursowania')
     if typ == 'cykliczna':
@@ -490,16 +485,30 @@ def register_routes(app):
         if data_podrozy == "":
             data_podrozy = None
 
-        sid = request.args.get('sid', type=int) or request.form.get('sid', type=int)
-        kid = request.args.get('kid', type=int) or request.form.get('kid', type=int)
+        sid = request.args.get('sid', type=int) or request.form.get('sid', type=int) or \
+              request.args.get('stacja_start', type=int) or request.form.get('stacja_start', type=int) or \
+              request.args.get('start', type=int) or request.form.get('start', type=int)
 
-        query = text("""
-            SELECT 
-                p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu,
-                p.dzien_przyjazdu_offset, p.dzien_odjazdu_offset,
-                i.numer_peronu, i.numer_toru, s.nazwa_stacji,
-                s.szerokosc_geograficzna, s.dlugosc_geograficzna,
-                g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa
+        kid = request.args.get('kid', type=int) or request.form.get('kid', type=int) or \
+              request.args.get('stacja_koniec', type=int) or request.form.get('stacja_koniec', type=int) or \
+              request.args.get('end', type=int) or request.form.get('end', type=int)
+
+        if sid and kid:
+            od_p = _numer_postoju_dla_stacji(id_trasy, sid, prefer_max=False)
+            do_p = _numer_postoju_dla_stacji(id_trasy, kid, prefer_max=True)
+            
+            if od_p is None or do_p is None:
+                od_p = 1
+                do_p = db.session.query(func.max(Postoj.numer_postoju)).filter(Postoj.id_trasy == id_trasy).scalar() or 1
+        else:
+            od_p = 1
+            do_p = db.session.query(func.max(Postoj.numer_postoju)).filter(Postoj.id_trasy == id_trasy).scalar() or 1
+
+        postoje_db = db.session.execute(text("""
+            SELECT p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu, p.id_peronu_toru,
+                   s.nazwa_stacji, s.szerokosc_geograficzna, s.dlugosc_geograficzna,
+                   g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa,
+                   i.numer_peronu, i.numer_toru, p.id_trasy, i.id
             FROM POSTOJE p
             JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
             JOIN STACJE s ON i.id_stacji = s.id_stacji
@@ -508,41 +517,36 @@ def register_routes(app):
             LEFT JOIN WOJEWODZTWA w ON pow.id_wojewodztwa = w.id_wojewodztwa
             WHERE p.id_trasy = :id_trasy
             ORDER BY p.numer_postoju
-        """)
-        postoje_rows = db.session.execute(query, {"id_trasy": id_trasy}).fetchall()
+        """), {'id_trasy': id_trasy}).fetchall()
+        
         postoje_ze_zmiana = pobierz_postoje_ze_zmiana_skladu(id_trasy)
         
         harmonogram = []
-        for r in postoje_rows:
-            czy_gmina_jest = r.nazwa_gminy is not None
-            prz_offset = f" (+{r.dzien_przyjazdu_offset}d)" if getattr(r, 'dzien_przyjazdu_offset', 0) > 0 else ""
-            odj_offset = f" (+{r.dzien_odjazdu_offset}d)" if getattr(r, 'dzien_odjazdu_offset', 0) > 0 else ""
+        for r in postoje_db:
+            if od_p <= r.numer_postoju <= do_p:
+                czy_gmina_jest = r.nazwa_gminy is not None
+                czy_poczatek = (r.numer_postoju == od_p)
+                czy_koniec = (r.numer_postoju == do_p)
 
-            harmonogram.append({
-                'numer': r.numer_postoju,
-                'ma_zmiane_skladu': r.numer_postoju in postoje_ze_zmiana,
-                'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
-                'peron': r.numer_peronu if r.numer_peronu is not None else "-",
-                'tor': r.numer_toru if r.numer_toru is not None else "-",
-                'przyjazd': (r.godzina_przyjazdu.strftime('%H:%M') + prz_offset) if r.godzina_przyjazdu else 'Początek',
-                'odjazd': (r.godzina_odjazdu.strftime('%H:%M') + odj_offset) if r.godzina_odjazdu else 'Koniec',
-                'lat': r.szerokosc_geograficzna, 'lon': r.dlugosc_geograficzna,
-                'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
-                'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
-                'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
-            })
+                harmonogram.append({
+                    'numer': r.numer_postoju,
+                    'ma_zmiane_skladu': r.numer_postoju in postoje_ze_zmiana,
+                    'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
+                    'peron': r.numer_peronu if r.numer_peronu is not None else "-",
+                    'tor': r.numer_toru if r.numer_toru is not None else "-",
+                    'przyjazd': 'Początek' if czy_poczatek else (r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else '-'),
+                    'odjazd': 'Koniec' if czy_koniec else (r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else '-'),
+                    'lat': r.szerokosc_geograficzna, 
+                    'lon': r.dlugosc_geograficzna,
+                    'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
+                    'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
+                    'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
+                })
             
         try:
             b_date = datetime.datetime.strptime(data_podrozy, '%Y-%m-%d').date() if data_podrozy else None
         except (ValueError, TypeError):
             b_date = None
-
-        if sid and kid:
-            od_p = _numer_postoju_dla_stacji(id_trasy, sid, prefer_max=False)
-            do_p = _numer_postoju_dla_stacji(id_trasy, kid, prefer_max=True)
-        else:
-            od_p = 1
-            do_p = db.session.query(func.max(Postoj.numer_postoju)).filter(Postoj.id_trasy == id_trasy).scalar() or 1
 
         wagony_struktura = get_wagony_dla_trasy(id_trasy, b_date, od_p, do_p)
 
@@ -1318,7 +1322,6 @@ def register_admin(app):
                 return redirect(f'/admin/trasa/edytuj/{id_trasy}')
 
             try:
-                # 1. Aktualizacja Pociągu i Trasy
                 nazwa_wspolna = request.form.get('nazwa_pociagu').strip()
                 num_pociagu = (request.form.get('numer_pociagu') or '').strip()
                 pociag.nazwa = f"{nazwa_wspolna} {num_pociagu}".strip() if num_pociagu else nazwa_wspolna
@@ -1326,7 +1329,6 @@ def register_admin(app):
                 
                 trasa.nazwa_trasy = request.form.get('nazwa_trasy').strip()
 
-                # 2. Przywrócenie przepiętych wagonów, potem czyszczenie starych zależności
                 przywroc_wagony_po_zmianie_trasy(id_trasy)
                 db.session.query(SkladSegment).filter_by(id_trasy=id_trasy).delete()
                 db.session.query(Postoj).filter_by(id_trasy=id_trasy).delete()
@@ -1334,7 +1336,6 @@ def register_admin(app):
                 db.session.query(Przejazd).filter_by(id_trasy=id_trasy).delete()
                 db.session.query(Sklad).filter_by(id_pociagu=pociag.id_pociagu).delete()
 
-                # 3. Zapisanie nowych postojów i wagonów korzystając z istniejących funkcji pomocniczych
                 zapisz_postoje_dla_trasy(trasa.id_trasy)
                 
                 wagony_id = [int(w) for w in request.form.getlist('id_typu_wagonu[]') if w]
@@ -1343,7 +1344,6 @@ def register_admin(app):
                 
                 zapisz_segmenty_skladu_dla_trasy(trasa.id_trasy, pociag.id_pociagu)
 
-                # 4. Zapisanie nowego harmonogramu
                 typ_kursowania = request.form.get('typ_kursowania')
                 if typ_kursowania == 'cykliczna':
                     dni = request.form.getlist('dni[]')
@@ -1363,7 +1363,6 @@ def register_admin(app):
                 db.session.rollback()
                 flash(f'Wystąpił błąd podczas edycji trasy: {czytelny_komunikat_bledu(e)}', 'danger')
 
-        # GET - Pobieranie danych do formularza (przekazanie starych wartości)
         stacje = db.session.query(Stacja).order_by(Stacja.nazwa_stacji).all()
         typy_wagonow = db.session.query(TypWagonu).order_by(TypWagonu.nazwa).all()
         
@@ -1385,7 +1384,6 @@ def register_admin(app):
         cykle_db = [c.dzien_kursowania for c in db.session.query(TrasaCykliczna).filter_by(id_trasy=id_trasy).all()]
         przejazdy_db = [p.data_przejazdu.strftime('%Y-%m-%d') for p in db.session.query(Przejazd).filter_by(id_trasy=id_trasy).all()]
 
-        # Parsowanie nazwy pociągu (rozdzielenie "Pendolino 41010" na "Pendolino" i "41010")
         nazwa_czlon = pociag.nazwa.rsplit(' ', 1)
         pociag_handlowa = nazwa_czlon[0] if len(nazwa_czlon) == 2 and nazwa_czlon[1].isdigit() else pociag.nazwa
         pociag_numer = nazwa_czlon[1] if len(nazwa_czlon) == 2 and nazwa_czlon[1].isdigit() else ""
