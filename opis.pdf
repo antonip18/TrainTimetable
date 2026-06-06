@@ -1,0 +1,197 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 2 /Kids [3 0 R 4 0 R] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Length 4600 >>
+stream
+BT
+/F1 11 Tf
+40 810 Td
+(TrainTimetable - opis projektu baza i aplikacja) Tj
+0 -18 Td
+(Tematyka) Tj
+0 -12 Td
+(Projekt dotyczy systemu informatycznego dla rozkladu jazdy pociagow pasazerskich.) Tj
+0 -12 Td
+(Zakres obejmuje baze danych i aplikacje webowa do obslugi wyszukiwania polaczen.) Tj
+0 -12 Td
+(Model danych odwzorowuje rzeczywista strukture przewozow: stacje, postoje, trasy i sklady.) Tj
+0 -12 Td
+(Dodatkowo uwzgledniono kontekst administracyjny i geograficzny stacji.) Tj
+0 -12 Td
+(W projekcie nacisk polozono na spojnosc danych i praktyczne scenariusze uzytkownika.) Tj
+0 -16 Td
+(Cele) Tj
+0 -12 Td
+(Celem glownym bylo zaprojektowanie relacyjnej bazy co najmniej w 3 postaci normalnej.) Tj
+0 -12 Td
+(Drugi cel to zapewnienie integralnosci przez klucze, ograniczenia i walidacje biznesowe.) Tj
+0 -12 Td
+(Trzeci cel obejmowal udostepnienie aplikacji CRUD zgodnej z tematyka kolejowa.) Tj
+0 -12 Td
+(System mial obslugiwac zarowno kursy cykliczne, jak i przejazdy dla konkretnych dat.) Tj
+0 -12 Td
+(Wymaganiem praktycznym bylo takze wyszukiwanie polaczen z przesiadkami.) Tj
+0 -12 Td
+(Istotny byl tez aspekt taboru: sklad pociagu, typy wagonow i miejsca pasazerskie.) Tj
+0 -16 Td
+(Czytelny opis schematu bazy) Tj
+0 -12 Td
+(Schemat sklada sie z 17 tabel. Czesciowo dzieli sie na obszar geograficzny i operacyjny.) Tj
+0 -12 Td
+(Obszar geograficzny tworza tabele WOJEWODZTWA, POWIATY, GMINY, STACJE.) Tj
+0 -12 Td
+(Relacja hierarchiczna idzie od wojewodztwa do stacji przez powiat i gmine.) Tj
+0 -12 Td
+(Tabela INFRASTRUKTURA_STACJI przechowuje perony i tory dla konkretnej stacji.) Tj
+0 -12 Td
+(UNIQUE dla id_stacji, numer_peronu, numer_toru zapobiega dublowaniu infrastruktury.) Tj
+0 -12 Td
+(Obszar taborowy obejmuje TYPY_WAGONOW, ELEMENTY_STALE, MIEJSCA, WAGONY.) Tj
+0 -12 Td
+(TYPY_WAGONOW definiuja parametry geometrii i charakter wagonu.) Tj
+0 -12 Td
+(ELEMENTY_STALE i MIEJSCA opisują uklad wewnetrzny kazdego typu wagonu.) Tj
+0 -12 Td
+(WAGONY to instancje fizyczne, ktore pozniej sa przypinane do pociagow i tras.) Tj
+0 -12 Td
+(Obszar ruchu pociagow tworza POCIAGI, SKLADY, TRASY, PRZEJAZDY, TRASY_CYKLICZNE, POSTOJE.) Tj
+0 -12 Td
+(SKLADY laczy pociag i wagon oraz pilnuje kolejnosci wagonow w skladzie.) Tj
+0 -12 Td
+(TRASY przechowuja opis kierunku i domyslnie przypisany pociag.) Tj
+0 -12 Td
+(PRZEJAZDY i TRASY_CYKLICZNE rozdzielaja harmonogram datowy i tygodniowy.) Tj
+0 -12 Td
+(POSTOJE przechowuja kolejnosc punktow trasy oraz czasy przyjazdu i odjazdu.) Tj
+0 -12 Td
+(Dzien offset w POSTOJE obsluguje przejscie przez polnoc i kursy wielodniowe.) Tj
+0 -12 Td
+(Rozszerzenie operacyjne zapewnia SKLADY_SEGMENTY i ZMIANY_SKLADU.) Tj
+0 -12 Td
+(Dzieki temu model obsluguje odpinanie i dopinanie wagonow na wybranych stacjach.) Tj
+0 -12 Td
+(W bazie zastosowano klucze obce, CHECK, UNIQUE oraz indeksy wydajnosciowe.) Tj
+0 -12 Td
+(Indeksy obejmuja miedzy innymi POSTOJE, INFRASTRUKTURA_STACJI i PRZEJAZDY.) Tj
+0 -12 Td
+(Takie podejscie poprawia czas wyszukiwania tras i budowania harmonogramow.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 4650 >>
+stream
+BT
+/F1 11 Tf
+40 810 Td
+(Napotkane problemy i rozwiazania) Tj
+0 -12 Td
+(Pierwszym problemem byla walidacja godzin na pierwszym i ostatnim postoju trasy.) Tj
+0 -12 Td
+(Rozwiazaniem bylo rozdzielenie logiki przyjazdu i odjazdu oraz wymuszenie pustych pol.) Tj
+0 -12 Td
+(Drugim problemem byly kursy przekraczajace polnoc i zaburzenia porownywania czasu.) Tj
+0 -12 Td
+(Rozwiazano to przez przechowywanie offsetu dnia dla przyjazdu i odjazdu.) Tj
+0 -12 Td
+(Trzecim problemem bylo mieszanie harmonogramu cyklicznego z jednorazowym.) Tj
+0 -12 Td
+(W modelu i walidacji wymuszono rozlaczne podejscie do tych trybow kursowania.) Tj
+0 -12 Td
+(Kolejny problem dotyczyl integralnosci skladu przy przepinaniu wagonow miedzy trasami.) Tj
+0 -12 Td
+(Wprowadzono tabele segmentow skladu i historii zmian oraz logike przywracania.) Tj
+0 -12 Td
+(Wyzwanie stanowila tez czytelnosc bledow SQL dla administratora.) Tj
+0 -12 Td
+(W aplikacji dodano mapowanie komunikatow bazowych na bardziej zrozumiale opisy.) Tj
+0 -16 Td
+(Informacje o aplikacji) Tj
+0 -12 Td
+(Aplikacja zostala wykonana w Pythonie z wykorzystaniem Flask i Flask SQLAlchemy.) Tj
+0 -12 Td
+(Punkt startowy to app.py, konfiguracja lacza z baza znajduje sie w config.py.) Tj
+0 -12 Td
+(Warstwa modeli w models.py odwzorowuje strukture tabel i zaleznosci relacyjne.) Tj
+0 -12 Td
+(Glowna logika biznesowa i endpointy HTTP znajduja sie w routes.py.) Tj
+0 -12 Td
+(Interfejs uzytkownika i panel administratora sa zrealizowane jako szablony HTML.) Tj
+0 -12 Td
+(Aplikacja pracuje lokalnie i korzysta z bazy PostgreSQL kolei_db.) Tj
+0 -16 Td
+(Funkcjonalnosci) Tj
+0 -12 Td
+(Modul uzytkownika pozwala wyszukac polaczenia miedzy stacjami dla daty i godziny.) Tj
+0 -12 Td
+(Algorytm wyznacza trasy bezposrednie oraz warianty z jedna lub dwiema przesiadkami.) Tj
+0 -12 Td
+(Wyniki pokazuja czasy, stacje przesiadkowe, kategorie i nazwy pociagow.) Tj
+0 -12 Td
+(Dostepny jest podglad szczegolow przejazdu wraz z harmonogramem postojow.) Tj
+0 -12 Td
+(Pokazywana jest tez struktura wagonow i miejsca specjalne w zadanym odcinku trasy.) Tj
+0 -12 Td
+(Panel admina obsluguje dodawanie, edycje i usuwanie tras oraz harmonogramow.) Tj
+0 -12 Td
+(Administrator zarzadza wagonami i typami skladu dla pociagow.) Tj
+0 -12 Td
+(Dostepny jest proces przepinania wagonow miedzy trasami na wspolnej stacji.) Tj
+0 -12 Td
+(Interfejs API udostepnia pomocnicze dane o infrastrukturze i mozliwych trasach.) Tj
+0 -16 Td
+(Instalacja i uzytkowanie) Tj
+0 -12 Td
+(1. Utworzyc uzytkownika i baze przez skrypt baza_danych login.sql.) Tj
+0 -12 Td
+(2. Utworzyc strukture i dane uruchamiajac baza_danych create.sql.) Tj
+0 -12 Td
+(3. Zainstalowac zaleznosci poleceniem pip install -r requirements.txt.) Tj
+0 -12 Td
+(4. Uruchomic aplikacje poleceniem python app.py.) Tj
+0 -12 Td
+(5. Otworzyc przegladarke i wejsc na strone glowna pod adresem localhost port 5000.) Tj
+0 -12 Td
+(Tryb uzytkownika sluzy do wyszukiwania polaczen i analizy szczegolow podrozy.) Tj
+0 -12 Td
+(Tryb admin sluzy do utrzymania danych operacyjnych i konfiguracji tras.) Tj
+0 -12 Td
+(Do resetu struktury mozna uzyc skryptow drop.sql oraz ponownie create.sql.) Tj
+0 -16 Td
+(Podsumowanie) Tj
+0 -12 Td
+(Projekt spelnia wymagania etapu z baza i aplikacja, zachowuje spojny model danych,) Tj
+0 -12 Td
+(zapewnia praktyczne funkcje dla uzytkownika i administratora oraz mozliwosc rozwoju.) Tj
+ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000123 00000 n 
+0000000249 00000 n 
+0000000375 00000 n 
+0000000445 00000 n 
+0000005128 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+9850
+%%EOF

@@ -296,7 +296,7 @@ def pobierz_wagony_do_listy_admin():
 def przywroc_wagony_po_zmianie_trasy(id_trasy):
     """Wywołuje trigger DB przywracający przepięte wagony do macierzystego pociągu."""
     db.session.execute(
-        text("SELECT fn_przywroc_wagony_po_zmianie_trasy(:id_trasy)"),
+        text("SELECT przywroc_wagony_po_zmianie_trasy(:id_trasy)"),
         {'id_trasy': id_trasy},
     )
 

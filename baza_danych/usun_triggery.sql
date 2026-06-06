@@ -17,6 +17,8 @@ DROP FUNCTION IF EXISTS fn_nadaj_numer_postoju();
 DROP FUNCTION IF EXISTS fn_nadaj_id_wagonu();
 DROP FUNCTION IF EXISTS fn_nadaj_id_pociagu();
 DROP FUNCTION IF EXISTS fn_nadaj_id_trasy();
+DROP FUNCTION IF EXISTS minuty_od_dnia_startu_dla_przyjazdu(INTEGER, TIME, INTEGER, TIME);
+DROP FUNCTION IF EXISTS minuty_od_dnia_startu_dla_odjazdu(INTEGER, TIME, INTEGER, TIME);
 
 DROP SEQUENCE IF EXISTS seq_wagony;
 DROP SEQUENCE IF EXISTS seq_pociagi;
