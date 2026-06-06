@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="LogicalDesign" database="LogicalDesign" id="afe571b6-bc09-41a4-9a4a-4672ee387ac7" >
+	<schema name="public" >
+		<udt name="DNI_TYGODNIA" udt_value_type="VARCHAR" udt_precision="NONE" sync_priority="900" >
+			<udt_script><![CDATA[CREATE TYPE ${name} AS ENUM (
+    'poniedziałek',
+    'wtorek',
+    'środa',
+    'czwartek',
+    'piątek',
+    'sobota',
+    'niedziela')]]></udt_script>
+		</udt>
+		<udt name="TYP_OPERACJI_SKLADU" udt_value_type="VARCHAR" udt_precision="NONE" sync_priority="900" >
+			<udt_script><![CDATA[CREATE TYPE ${name} AS ENUM ('ODPIĘCIE', 'PRZYPIĘCIE')]]></udt_script>
+		</udt>
+		<table name="ELEMENTY_STALE" spec="" >
+			<column name="id_elementu" type="TEXT" mandatory="y" />
+			<column name="id_typu" type="TEXT" />
+			<column name="nazwa_elementu" type="VARCHAR" length="50" mandatory="y" />
+			<column name="rzad_od" type="TEXT" mandatory="y" />
+			<column name="rzad_do" type="TEXT" mandatory="y" />
+			<column name="kolumna_od" type="TEXT" mandatory="y" />
+			<column name="kolumna_do" type="TEXT" mandatory="y" />
+			<index name="pk_ELEMENTY_STALE" unique="PRIMARY_KEY" >
+				<column name="id_elementu" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="TYPY_WAGONOW" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_typu" pk="id_typu" />
+			</fk>
+		</table>
+		<table name="GMINY" spec="" >
+			<column name="id_gminy" type="TEXT" mandatory="y" />
+			<column name="nazwa_gminy" type="VARCHAR" length="50" mandatory="y" />
+			<column name="id_powiatu" type="TEXT" />
+			<index name="pk_GMINY" unique="PRIMARY_KEY" >
+				<column name="id_gminy" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="POWIATY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="NOT NULL" >
+				<fk_column name="id_powiatu" pk="id_powiatu" />
+			</fk>
+		</table>
+		<table name="INFRASTRUKTURA_STACJI" spec="" >
+			<column name="id" type="TEXT" mandatory="y" />
+			<column name="id_stacji" type="TEXT" />
+			<column name="numer_peronu" type="TEXT" mandatory="y" />
+			<column name="numer_toru" type="TEXT" mandatory="y" />
+			<index name="pk_INFRASTRUKTURA_STACJI" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<index name="idx_infra_id_stacji" unique="NORMAL" >
+				<column name="id_stacji" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="STACJE" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_stacji" pk="id_stacji" />
+			</fk>
+		</table>
+		<table name="MIEJSCA" spec="" >
+			<column name="id_miejsca" type="TEXT" mandatory="y" />
+			<column name="id_typu" type="TEXT" />
+			<column name="numer_miejsca" type="VARCHAR" length="5" mandatory="y" />
+			<column name="rzad" type="TEXT" mandatory="y" />
+			<column name="kolumna" type="TEXT" mandatory="y" />
+			<column name="numer_przedzialu" type="TEXT" />
+			<column name="lokalizacja" type="VARCHAR" length="20" />
+			<column name="czy_przy_stoliku" type="BOOLEAN" >
+				<defo><![CDATA[FALSE]]></defo>
+			</column>
+			<column name="czy_dla_niepelnosprawnych" type="BOOLEAN" >
+				<defo><![CDATA[FALSE]]></defo>
+			</column>
+			<column name="czy_dla_rowerzystow" type="BOOLEAN" >
+				<defo><![CDATA[FALSE]]></defo>
+			</column>
+			<column name="czy_przodem" type="BOOLEAN" />
+			<index name="pk_MIEJSCA" unique="PRIMARY_KEY" >
+				<column name="id_miejsca" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="TYPY_WAGONOW" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_typu" pk="id_typu" />
+			</fk>
+		</table>
+		<table name="POCIAGI" spec="" >
+			<column name="id_pociagu" type="TEXT" mandatory="y" />
+			<column name="nazwa" type="VARCHAR" length="30" mandatory="y" />
+			<column name="kategoria" type="VARCHAR" length="10" mandatory="y" />
+			<index name="pk_POCIAGI" unique="PRIMARY_KEY" >
+				<column name="id_pociagu" />
+			</index>
+			<index name="unq_POCIAGI_nazwa" unique="UNIQUE_KEY" >
+				<column name="nazwa" />
+			</index>
+			<constraint name="Cns_POCIAGI_kategoria" >
+				<string><![CDATA[kategoria IN ('TLK', 'IC', 'EIC', 'EIP', 'EC', 'EN', 'ICN', 'IC/MP', 'EN/IC', 'EC/IC/ICN', 'IC+', 'EC/EIC', 'EC/IC')]]></string>
+			</constraint>
+		</table>
+		<table name="POSTOJE" spec="" >
+			<column name="id_trasy" type="TEXT" mandatory="y" />
+			<column name="numer_postoju" type="TEXT" mandatory="y" />
+			<column name="id_peronu_toru" type="TEXT" mandatory="y" />
+			<column name="dzien_przyjazdu_offset" type="TEXT" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="dzien_odjazdu_offset" type="TEXT" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="godzina_przyjazdu" type="TEXT" />
+			<column name="godzina_odjazdu" type="TEXT" />
+			<index name="pk_POSTOJE" unique="PRIMARY_KEY" >
+				<column name="id_trasy" />
+				<column name="numer_postoju" />
+			</index>
+			<index name="idx_postoje_id_trasy" unique="NORMAL" >
+				<column name="id_trasy" />
+			</index>
+			<index name="idx_postoje_id_peronu_toru" unique="NORMAL" >
+				<column name="id_peronu_toru" />
+			</index>
+			<constraint name="CK_POSTOJE" type="CHECK" options="" >
+				<string><![CDATA[godzina_przyjazdu IS NULL OR godzina_odjazdu IS NULL OR (godzina_odjazdu >= godzina_przyjazdu AND dzien_przyjazdu_offset=dzien_odjazdu_offset) OR (dzien_odjazdu_offset=dzien_przyjazdu_offset+1)]]></string>
+			</constraint>
+			<fk name="Fk" to_schema="public" to_table="TRASY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+			</fk>
+			<fk name="Fk" to_schema="public" to_table="INFRASTRUKTURA_STACJI" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_peronu_toru" pk="id" />
+			</fk>
+		</table>
+		<table name="POWIATY" spec="" >
+			<column name="id_powiatu" type="TEXT" mandatory="y" />
+			<column name="nazwa_powiatu" type="VARCHAR" length="50" mandatory="y" />
+			<column name="id_wojewodztwa" type="TEXT" />
+			<index name="pk_POWIATY" unique="PRIMARY_KEY" >
+				<column name="id_powiatu" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="WOJEWODZTWA" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="NOT NULL" >
+				<fk_column name="id_wojewodztwa" pk="id_wojewodztwa" />
+			</fk>
+		</table>
+		<table name="PRZEJAZDY" spec="" >
+			<column name="id_trasy" type="TEXT" />
+			<column name="id_pociagu" type="TEXT" />
+			<column name="data_przejazdu" type="DATE" mandatory="y" />
+			<index name="pk_PRZEJAZDY" unique="UNIQUE_KEY" >
+				<column name="id_trasy" />
+				<column name="id_pociagu" />
+				<column name="data_przejazdu" />
+			</index>
+			<index name="idx_przejazdy_trasa_data" unique="NORMAL" >
+				<column name="id_trasy" />
+				<column name="data_przejazdu" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="TRASY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+			</fk>
+			<fk name="Fk" to_schema="public" to_table="POCIAGI" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_pociagu" pk="id_pociagu" />
+			</fk>
+		</table>
+		<table name="SKLADY" spec="" >
+			<column name="id_pociagu" type="TEXT" mandatory="y" />
+			<column name="id_wagonu" type="TEXT" mandatory="y" />
+			<column name="numer_kolejnosci" type="TEXT" mandatory="y" />
+			<index name="pk_SKLADY" unique="PRIMARY_KEY" >
+				<column name="id_pociagu" />
+				<column name="id_wagonu" />
+			</index>
+			<constraint name="Cns_SKLADY_numer_kolejnosci" >
+				<string><![CDATA[numer_kolejnosci > 0]]></string>
+			</constraint>
+			<fk name="Fk" to_schema="public" to_table="POCIAGI" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_pociagu" pk="id_pociagu" />
+			</fk>
+			<fk name="Fk" to_schema="public" to_table="WAGONY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_wagonu" pk="id_wagonu" />
+			</fk>
+		</table>
+		<table name="SKLADY_SEGMENTY" spec="" >
+			<column name="id_trasy" type="TEXT" mandatory="y" />
+			<column name="id_wagonu" type="TEXT" mandatory="y" />
+			<column name="od_postoju" type="TEXT" mandatory="y" >
+				<defo><![CDATA[1]]></defo>
+			</column>
+			<column name="do_postoju" type="TEXT" />
+			<column name="numer_kolejnosci" type="TEXT" mandatory="y" />
+			<index name="pk_SKLADY_SEGMENTY" unique="PRIMARY_KEY" >
+				<column name="id_trasy" />
+				<column name="id_wagonu" />
+				<column name="od_postoju" />
+			</index>
+			<index name="idx_sklady_segmenty_trasa" unique="NORMAL" >
+				<column name="id_trasy" />
+			</index>
+			<constraint name="Cns_SKLADY_SEGMENTY_od_postoju" >
+				<string><![CDATA[od_postoju > 0]]></string>
+			</constraint>
+			<constraint name="Cns_SKLADY_SEGMENTY_do_postoju" >
+				<string><![CDATA[do_postoju IS NULL OR do_postoju >= od_postoju]]></string>
+			</constraint>
+			<constraint name="Cns_SKLADY_SEGMENTY_numer_kolejnosci" >
+				<string><![CDATA[numer_kolejnosci > 0]]></string>
+			</constraint>
+			<fk name="Fk" to_schema="public" to_table="TRASY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" delete_action="cascade" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+			</fk>
+			<fk name="Fk" to_schema="public" to_table="WAGONY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_wagonu" pk="id_wagonu" />
+			</fk>
+			<fk name="FK_SKLADY_SEGMENTY POSTOJE" to_schema="public" to_table="POSTOJE" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+				<fk_column name="od_postoju" pk="numer_postoju" />
+			</fk>
+			<fk name="FK_SKLADY_SEGMENTY POSTOJE_001" to_schema="public" to_table="POSTOJE" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+				<fk_column name="do_postoju" pk="numer_postoju" />
+			</fk>
+		</table>
+		<table name="STACJE" spec="" >
+			<column name="id_stacji" type="TEXT" mandatory="y" />
+			<column name="nazwa_stacji" type="VARCHAR" length="50" mandatory="y" />
+			<column name="id_gminy" type="TEXT" />
+			<column name="szerokosc_geograficzna" type="TEXT" mandatory="y" />
+			<column name="dlugosc_geograficzna" type="TEXT" mandatory="y" />
+			<index name="pk_STACJE" unique="PRIMARY_KEY" >
+				<column name="id_stacji" />
+			</index>
+			<constraint name="CK_STACJE" type="CHECK" options="" >
+				<string><![CDATA[szerokosc_geograficzna BETWEEN -90 AND 90]]></string>
+			</constraint>
+			<constraint name="CK_STACJE_001" type="CHECK" options="" >
+				<string><![CDATA[dlugosc_geograficzna BETWEEN -180 AND 180]]></string>
+			</constraint>
+			<fk name="Fk" to_schema="public" to_table="GMINY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_gminy" pk="id_gminy" />
+			</fk>
+		</table>
+		<table name="TRASY" spec="" >
+			<column name="id_trasy" type="TEXT" mandatory="y" />
+			<column name="nazwa_trasy" type="VARCHAR" length="100" mandatory="y" />
+			<column name="id_pociagu" type="TEXT" />
+			<index name="pk_TRASY" unique="PRIMARY_KEY" >
+				<column name="id_trasy" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="POCIAGI" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_pociagu" pk="id_pociagu" />
+			</fk>
+		</table>
+		<table name="TRASY_CYKLICZNE" spec="" >
+			<column name="id_trasy" type="TEXT" />
+			<column name="dzien_kursowania" type="DNI_TYGODNIA" mandatory="y" />
+			<index name="pk_TRASY_CYKLICZNE" unique="UNIQUE_KEY" >
+				<column name="id_trasy" />
+				<column name="dzien_kursowania" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="TRASY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+			</fk>
+		</table>
+		<table name="TYPY_WAGONOW" spec="" >
+			<column name="id_typu" type="TEXT" mandatory="y" />
+			<column name="nazwa" type="VARCHAR" length="50" mandatory="y" />
+			<column name="liczba_rzedow" type="TEXT" mandatory="y" />
+			<column name="liczba_kolumn" type="TEXT" mandatory="y" />
+			<column name="czy_przedzialowy" type="BOOLEAN" mandatory="y" />
+			<index name="pk_TYPY_WAGONOW" unique="PRIMARY_KEY" >
+				<column name="id_typu" />
+			</index>
+		</table>
+		<table name="WAGONY" spec="" >
+			<column name="id_wagonu" type="TEXT" mandatory="y" />
+			<column name="id_typu" type="TEXT" mandatory="y" />
+			<index name="pk_WAGONY" unique="PRIMARY_KEY" >
+				<column name="id_wagonu" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="TYPY_WAGONOW" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_typu" pk="id_typu" />
+			</fk>
+		</table>
+		<table name="WOJEWODZTWA" spec="" >
+			<column name="id_wojewodztwa" type="TEXT" mandatory="y" />
+			<column name="nazwa_wojewodztwa" type="VARCHAR" length="50" mandatory="y" />
+			<index name="pk_WOJEWODZTWA" unique="PRIMARY_KEY" >
+				<column name="id_wojewodztwa" />
+			</index>
+		</table>
+		<table name="ZMIANY_SKLADU" spec="" >
+			<column name="id_zmiany" type="TEXT" mandatory="y" />
+			<column name="id_trasy" type="TEXT" mandatory="y" />
+			<column name="numer_postoju" type="TEXT" mandatory="y" />
+			<column name="id_wagonu" type="TEXT" mandatory="y" />
+			<column name="typ_operacji" type="TYP_OPERACJI_SKLADU" mandatory="y" />
+			<column name="id_trasy_docelowej" type="TEXT" />
+			<column name="opis" type="VARCHAR" length="200" />
+			<index name="pk_ZMIANY_SKLADU" unique="PRIMARY_KEY" >
+				<column name="id_zmiany" />
+			</index>
+			<fk name="Fk" to_schema="public" to_table="TRASY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" delete_action="cascade" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+			</fk>
+			<fk name="Fk" to_schema="public" to_table="WAGONY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" options="" >
+				<fk_column name="id_wagonu" pk="id_wagonu" />
+			</fk>
+			<fk name="Fk" to_schema="public" to_table="TRASY" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" delete_action="setNull" options="" >
+				<fk_column name="id_trasy_docelowej" pk="id_trasy" />
+			</fk>
+			<fk name="FK_ZMIANY_SKLADU POSTOJE" to_schema="public" to_table="POSTOJE" type="Identifying" mandatory="y" cardinality="OneMore" range_from="0" range_to="0" delete_action="cascade" options="" >
+				<fk_column name="id_trasy" pk="id_trasy" />
+				<fk_column name="numer_postoju" pk="numer_postoju" />
+			</fk>
+		</table>
+		<sequence name="seq_pociagi" />
+		<sequence name="seq_trasy" />
+		<sequence name="seq_wagony" />
+		<sequence name="seq_zmiany_skladu" />
+	</schema>
+	<diagram_group name="Default" id="b6fa36f8-de0e-4d1f-b025-52179a358489" >
+		<diagram name="Diagram" id="a94b0e68-b7ae-4f56-b97d-f98417a23145" show_relation="columns" >
+			<entity schema="public" name="ELEMENTY_STALE" color="C19339" x="532" y="988" />
+			<entity schema="public" name="GMINY" color="8239C1" x="133" y="247" />
+			<entity schema="public" name="INFRASTRUKTURA_STACJI" color="8239C1" x="95" y="665" />
+			<entity schema="public" name="MIEJSCA" color="C19339" x="57" y="855" />
+			<entity schema="public" name="POCIAGI" color="C19339" x="1083" y="874" />
+			<entity schema="public" name="POSTOJE" color="3986C1" x="399" y="209" />
+			<entity schema="public" name="POWIATY" color="8239C1" x="133" y="57" />
+			<entity schema="public" name="PRZEJAZDY" color="3986C1" x="1083" y="266" />
+			<entity schema="public" name="SKLADY" color="C19339" x="779" y="874" />
+			<entity schema="public" name="SKLADY_SEGMENTY" color="3986C1" x="551" y="532" />
+			<entity schema="public" name="STACJE" color="8239C1" x="95" y="437" />
+			<entity schema="public" name="TRASY" color="3986C1" x="893" y="209" />
+			<entity schema="public" name="TRASY_CYKLICZNE" color="3986C1" x="855" y="57" />
+			<entity schema="public" name="TYPY_WAGONOW" color="C19339" x="361" y="741" />
+			<entity schema="public" name="WAGONY" color="C19339" x="608" y="760" />
+			<entity schema="public" name="WOJEWODZTWA" color="8239C1" x="437" y="57" />
+			<entity schema="public" name="ZMIANY_SKLADU" color="3986C1" x="798" y="399" />
+		</diagram>
+	</diagram_group>
+</project>
