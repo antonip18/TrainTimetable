@@ -84,6 +84,10 @@ DECLARE
     czas_rzeczywisty INTEGER;
     min_czas DOUBLE PRECISION;
     max_czas DOUBLE PRECISION;
+
+    v_czas_przyjazdu_stacja INTEGER;
+    v_czas_odjazdu_stacja INTEGER;
+    v_czas_postoju_stacja INTEGER;
 BEGIN
     IF NEW.numer_postoju = 1 THEN
         IF NEW.godzina_przyjazdu IS NOT NULL THEN
@@ -97,6 +101,29 @@ BEGIN
     IF NEW.numer_postoju > 1 THEN
         IF NEW.godzina_przyjazdu IS NULL THEN
             RAISE EXCEPTION 'Postój nr % musi mieć podaną godzinę przyjazdu.', NEW.numer_postoju;
+        END IF;
+    END IF;
+
+    IF NEW.godzina_przyjazdu IS NOT NULL AND NEW.godzina_odjazdu IS NOT NULL THEN
+        v_czas_przyjazdu_stacja :=
+            NEW.dzien_przyjazdu_offset * 1440
+            + EXTRACT(HOUR FROM NEW.godzina_przyjazdu)::INTEGER * 60
+            + EXTRACT(MINUTE FROM NEW.godzina_przyjazdu)::INTEGER;
+
+        v_czas_odjazdu_stacja :=
+            NEW.dzien_odjazdu_offset * 1440
+            + EXTRACT(HOUR FROM NEW.godzina_odjazdu)::INTEGER * 60
+            + EXTRACT(MINUTE FROM NEW.godzina_odjazdu)::INTEGER;
+
+        v_czas_postoju_stacja := v_czas_odjazdu_stacja - v_czas_przyjazdu_stacja;
+
+        IF v_czas_postoju_stacja < 0 THEN
+            RAISE EXCEPTION 'Postój nr % ma godzinę odjazdu wcześniejszą niż godzinę przyjazdu.', NEW.numer_postoju;
+        END IF;
+
+        IF v_czas_postoju_stacja > 90 THEN
+            RAISE EXCEPTION 'Maksymalny czas postoju na stacji wynosi 90 minut! Na postoju nr % zaplanowano % min.', 
+                NEW.numer_postoju, v_czas_postoju_stacja;
         END IF;
     END IF;
 
@@ -397,6 +424,11 @@ EXECUTE FUNCTION poprawnosc_peronu();
 
 
 
+
+
+
+
+
 CREATE OR REPLACE FUNCTION poprawnosc_wagonu_sklady()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -490,7 +522,7 @@ FOR EACH ROW
 EXECUTE FUNCTION poprawnosc_wagonu_przejazdy();
 
 
-CREATE OR REPLACE FUNCTION fn_przywroc_wagony_po_zmianie_trasy(p_id_trasy INTEGER)
+CREATE OR REPLACE FUNCTION fn_przywroc_wagony_po_zmianie_trasy(p_id_trasy INTEGER, p_is_delete BOOLEAN DEFAULT FALSE)
 RETURNS void AS $$
 DECLARE
     v_wagon INTEGER;
@@ -517,24 +549,15 @@ BEGIN
         END IF;
 
         DELETE FROM zmiany_skladu WHERE id_wagonu = v_wagon;
-        DELETE FROM sklady_segmenty WHERE id_wagonu = v_wagon AND id_trasy != p_id_trasy;
-
-        DELETE FROM sklady_segmenty
-        WHERE id_wagonu = v_wagon AND id_trasy = p_id_trasy
-          AND (od_postoju > 1 OR do_postoju IS NOT NULL);
+        DELETE FROM sklady_segmenty WHERE id_wagonu = v_wagon;
 
         FOR v_trasa IN
             SELECT t.id_trasy FROM trasy t
-            WHERE t.id_pociagu = v_pociag AND t.id_trasy != p_id_trasy
+            WHERE t.id_pociagu = v_pociag 
+              AND (NOT p_is_delete OR t.id_trasy != p_id_trasy)
         LOOP
-            IF NOT EXISTS (
-                SELECT 1 FROM sklady_segmenty
-                WHERE id_trasy = v_trasa AND id_wagonu = v_wagon
-                  AND od_postoju = 1 AND do_postoju IS NULL
-            ) THEN
-                INSERT INTO sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejnosci)
-                VALUES (v_trasa, v_wagon, 1, NULL, v_kolejnosc);
-            END IF;
+            INSERT INTO sklady_segmenty (id_trasy, id_wagonu, od_postoju, do_postoju, numer_kolejnosci)
+            VALUES (v_trasa, v_wagon, 1, NULL, v_kolejnosc);
         END LOOP;
     END LOOP;
 
@@ -543,17 +566,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 CREATE OR REPLACE FUNCTION fn_trg_przywroc_wagony_przed_usunieciem_trasy()
 RETURNS TRIGGER AS $$
 BEGIN
-    PERFORM fn_przywroc_wagony_po_zmianie_trasy(OLD.id_trasy);
-    RETURN OLD;
+    IF TG_OP = 'DELETE' THEN
+        PERFORM fn_przywroc_wagony_po_zmianie_trasy(OLD.id_trasy, TRUE);
+        RETURN OLD;
+    ELSE
+        PERFORM fn_przywroc_wagony_po_zmianie_trasy(OLD.id_trasy, FALSE);
+        RETURN NEW;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_przywroc_wagony_przed_usunieciem_trasy
-BEFORE DELETE ON trasy
+BEFORE DELETE OR UPDATE ON trasy
 FOR EACH ROW
 EXECUTE FUNCTION fn_trg_przywroc_wagony_przed_usunieciem_trasy();
 
@@ -561,26 +588,33 @@ EXECUTE FUNCTION fn_trg_przywroc_wagony_przed_usunieciem_trasy();
 CREATE OR REPLACE FUNCTION fn_trg_przywroc_wagony_przed_usunieciem_przejazdu()
 RETURNS TRIGGER AS $$
 BEGIN
-    PERFORM fn_przywroc_wagony_po_zmianie_trasy(OLD.id_trasy);
-    RETURN OLD;
+    PERFORM fn_przywroc_wagony_po_zmianie_trasy(OLD.id_trasy, FALSE);
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_przywroc_wagony_przed_usunieciem_przejazdu
-BEFORE DELETE ON przejazdy
+BEFORE DELETE OR UPDATE ON przejazdy
 FOR EACH ROW
 EXECUTE FUNCTION fn_trg_przywroc_wagony_przed_usunieciem_przejazdu();
-
 
 CREATE OR REPLACE FUNCTION fn_trg_przywroc_wagony_przed_usunieciem_cyklu()
 RETURNS TRIGGER AS $$
 BEGIN
-    PERFORM fn_przywroc_wagony_po_zmianie_trasy(OLD.id_trasy);
-    RETURN OLD;
+    PERFORM fn_przywroc_wagony_po_zmianie_trasy(OLD.id_trasy, FALSE);
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_przywroc_wagony_przed_usunieciem_cyklu
-BEFORE DELETE ON trasy_cykliczne
+BEFORE DELETE OR UPDATE ON trasy_cykliczne
 FOR EACH ROW
 EXECUTE FUNCTION fn_trg_przywroc_wagony_przed_usunieciem_cyklu();
