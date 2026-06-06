@@ -50,7 +50,7 @@
                     
                     <div>
                         {% if p.type == 'direct' %}
-                            <a href="/szczegoly/direct/{{ p.id_trasy }}?data={{ p.data_wyjazdu }}" class="btn-details">Szczegóły</a>
+                            <a href="/szczegoly/direct/{{ p.id_trasy }}?data={{ p.data_wyjazdu }}&sid={{ p.sid }}&kid={{ p.kid }}" class="btn-details">Szczegóły</a>
                         {% elif p.type == 'transfer' %}
                             <a href="/szczegoly/transfer/{{ p.id_trasy_1 }}/{{ p.id_trasy_2 }}?data={{ p.data_wyjazdu }}&sid={{ p.sid }}&tid={{ p.tid }}&kid={{ p.kid }}" class="btn-details">Szczegóły</a>
                         {% elif p.type == 'transfer2' %}

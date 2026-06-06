@@ -486,63 +486,59 @@ def register_routes(app):
             data_podrozy = None
 
         sid = request.args.get('sid', type=int) or request.form.get('sid', type=int) or \
-              request.args.get('stacja_start', type=int) or request.form.get('stacja_start', type=int) or \
-              request.args.get('start', type=int) or request.form.get('start', type=int)
+            request.args.get('stacja_start', type=int) or request.form.get('stacja_start', type=int) or \
+            request.args.get('start', type=int) or request.form.get('start', type=int)
 
         kid = request.args.get('kid', type=int) or request.form.get('kid', type=int) or \
-              request.args.get('stacja_koniec', type=int) or request.form.get('stacja_koniec', type=int) or \
-              request.args.get('end', type=int) or request.form.get('end', type=int)
+            request.args.get('stacja_koniec', type=int) or request.form.get('stacja_koniec', type=int) or \
+            request.args.get('end', type=int) or request.form.get('end', type=int)
 
         if sid and kid:
-            od_p = _numer_postoju_dla_stacji(id_trasy, sid, prefer_max=False)
-            do_p = _numer_postoju_dla_stacji(id_trasy, kid, prefer_max=True)
-            
-            if od_p is None or do_p is None:
+            harmonogram = get_sliced_stops(id_trasy, sid, kid)
+            if harmonogram:
+                od_p = harmonogram[0]['numer']
+                do_p = harmonogram[-1]['numer']
+            else:
                 od_p = 1
                 do_p = db.session.query(func.max(Postoj.numer_postoju)).filter(Postoj.id_trasy == id_trasy).scalar() or 1
         else:
+            harmonogram = []
             od_p = 1
             do_p = db.session.query(func.max(Postoj.numer_postoju)).filter(Postoj.id_trasy == id_trasy).scalar() or 1
 
-        postoje_db = db.session.execute(text("""
-            SELECT p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu, p.id_peronu_toru,
-                   s.nazwa_stacji, s.szerokosc_geograficzna, s.dlugosc_geograficzna,
-                   g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa,
-                   i.numer_peronu, i.numer_toru, p.id_trasy, i.id
-            FROM POSTOJE p
-            JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
-            JOIN STACJE s ON i.id_stacji = s.id_stacji
-            LEFT JOIN GMINY g ON s.id_gminy = g.id_gminy
-            LEFT JOIN POWIATY pow ON g.id_powiatu = pow.id_powiatu
-            LEFT JOIN WOJEWODZTWA w ON pow.id_wojewodztwa = w.id_wojewodztwa
-            WHERE p.id_trasy = :id_trasy
-            ORDER BY p.numer_postoju
-        """), {'id_trasy': id_trasy}).fetchall()
-        
-        postoje_ze_zmiana = pobierz_postoje_ze_zmiana_skladu(id_trasy)
-        
-        harmonogram = []
-        for r in postoje_db:
-            if od_p <= r.numer_postoju <= do_p:
-                czy_gmina_jest = r.nazwa_gminy is not None
-                czy_poczatek = (r.numer_postoju == od_p)
-                czy_koniec = (r.numer_postoju == do_p)
-
-                harmonogram.append({
-                    'numer': r.numer_postoju,
-                    'ma_zmiane_skladu': r.numer_postoju in postoje_ze_zmiana,
-                    'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
-                    'peron': r.numer_peronu if r.numer_peronu is not None else "-",
-                    'tor': r.numer_toru if r.numer_toru is not None else "-",
-                    'przyjazd': 'Początek' if czy_poczatek else (r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else '-'),
-                    'odjazd': 'Koniec' if czy_koniec else (r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else '-'),
-                    'lat': r.szerokosc_geograficzna, 
-                    'lon': r.dlugosc_geograficzna,
-                    'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
-                    'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
-                    'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
-                })
+        if not harmonogram:
+            postoje_db = db.session.execute(text("""
+                SELECT p.numer_postoju, p.godzina_przyjazdu, p.godzina_odjazdu, p.id_peronu_toru,
+                    s.nazwa_stacji, s.szerokosc_geograficzna, s.dlugosc_geograficzna,
+                    g.nazwa_gminy, pow.nazwa_powiatu, w.nazwa_wojewodztwa,
+                    i.numer_peronu, i.numer_toru
+                FROM POSTOJE p
+                JOIN INFRASTRUKTURA_STACJI i ON p.id_peronu_toru = i.id
+                JOIN STACJE s ON i.id_stacji = s.id_stacji
+                LEFT JOIN GMINY g ON s.id_gminy = g.id_gminy
+                LEFT JOIN POWIATY pow ON g.id_powiatu = pow.id_powiatu
+                LEFT JOIN WOJEWODZTWA w ON pow.id_wojewodztwa = w.id_wojewodztwa
+                WHERE p.id_trasy = :id_trasy
+                ORDER BY p.numer_postoju
+            """), {'id_trasy': id_trasy}).fetchall()
             
+            for r in postoje_db:
+                if od_p <= r.numer_postoju <= do_p:
+                    czy_gmina_jest = r.nazwa_gminy is not None
+                    harmonogram.append({
+                        'numer': r.numer_postoju,
+                        'stacja': r.nazwa_stacji if r.nazwa_stacji else "Nieznana",
+                        'peron': r.numer_peronu if r.numer_peronu is not None else "-",
+                        'tor': r.numer_toru if r.numer_toru is not None else "-",
+                        'przyjazd': r.godzina_przyjazdu.strftime('%H:%M') if r.godzina_przyjazdu else 'Początek',
+                        'odjazd': r.godzina_odjazdu.strftime('%H:%M') if r.godzina_odjazdu else 'Koniec',
+                        'lat': r.szerokosc_geograficzna, 
+                        'lon': r.dlugosc_geograficzna,
+                        'gmina': r.nazwa_gminy if czy_gmina_jest else "NIEZNANE",
+                        'powiat': r.nazwa_powiatu if czy_gmina_jest else "NIEZNANE",
+                        'wojewodztwo': r.nazwa_wojewodztwa if czy_gmina_jest else "NIEZNANE"
+                    })
+
         try:
             b_date = datetime.datetime.strptime(data_podrozy, '%Y-%m-%d').date() if data_podrozy else None
         except (ValueError, TypeError):
